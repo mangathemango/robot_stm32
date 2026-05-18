@@ -59,10 +59,19 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
+#define SERVO_1_Pin GPIO_PIN_0
+#define SERVO_1_GPIO_Port GPIOC
+#define SERVO_2_Pin GPIO_PIN_1
+#define SERVO_2_GPIO_Port GPIOC
+#define SERVO_3_Pin GPIO_PIN_2
+#define SERVO_3_GPIO_Port GPIOC
+#define SERVO_4_Pin GPIO_PIN_3
+#define SERVO_4_GPIO_Port GPIOC
 #define BEEP_Pin GPIO_PIN_5
 #define BEEP_GPIO_Port GPIOC
 #define KEY1_Pin GPIO_PIN_2
 #define KEY1_GPIO_Port GPIOD
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
