@@ -1,6 +1,8 @@
 #include "SerialDecoder.h"
 #include <stdlib.h>
 #include <string.h>
+#include "ssd1306.h"
+#include "ssd1306_fonts.h"
 
 uint8_t buffer[300];
 static int bufIndex = 0;   // renamed from 'index' — index() is a POSIX stdlib name
@@ -123,7 +125,10 @@ void handlePacket(void)
             char text[256] = {0};
             uint8_t copyLen = (len < sizeof(text) - 1) ? len : (uint8_t)(sizeof(text) - 1);
             memcpy(text, data, copyLen);
-            // TODO: Set_Display_Text(text);
+            ssd1306_Fill(Black);
+            ssd1306_SetCursor(0, 0);
+            ssd1306_WriteString(text, Font_7x10, White);
+            ssd1306_UpdateScreen();
             printf("[PKT] Set_Display_Text: \"%s\"\n", text);
             break;
         }
