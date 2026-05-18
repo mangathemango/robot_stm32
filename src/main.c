@@ -121,12 +121,6 @@ int main(void)
 
     lastKeyState = currentKeyState;
 
-    if(RxTemp != 0)
-    {
-      Beep_Start(100);
-      RxTemp = 0;
-    }
-
     Beep_Update();
     /* USER CODE END WHILE */
 

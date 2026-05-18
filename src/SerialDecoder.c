@@ -155,7 +155,7 @@ void handlePacket(void)
         case CMD_BEEP:
         {
             if (len != 0x00) break;
-            Beep_Start(1000);
+            Beep_Start(100);
             printf("[PKT] Beep\n");
             break;
         }
