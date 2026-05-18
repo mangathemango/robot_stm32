@@ -237,15 +237,35 @@ char ssd1306_WriteChar(char ch, SSD1306_Font_t Font, SSD1306_COLOR color) {
     
     // Use the font to write
     for(i = 0; i < Font.height; i++) {
-        b = Font.data[(ch - 32) * Font.height + i];
-        for(j = 0; j < char_width; j++) {
-            if((b << j) & 0x8000)  {
-                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR) color);
+
+    b = Font.data[(ch - 32) * Font.height + i];
+
+    for(j = 0; j < char_width; j++) {
+
+        uint16_t yStart = SSD1306.CurrentY + (i * 15) / 10;
+        uint16_t yEnd   = SSD1306.CurrentY + ((i + 1) * 15) / 10;
+
+        for(uint16_t y = yStart; y < yEnd; y++) {
+
+            if((b << j) & 0x8000) {
+
+                ssd1306_DrawPixel(
+                    SSD1306.CurrentX + j,
+                    y,
+                    (SSD1306_COLOR) color
+                );
+
             } else {
-                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR)!color);
+
+                ssd1306_DrawPixel(
+                    SSD1306.CurrentX + j,
+                    y,
+                    (SSD1306_COLOR)!color
+                );
             }
         }
     }
+}
     
     // The current space is now taken
     SSD1306.CurrentX += char_width;

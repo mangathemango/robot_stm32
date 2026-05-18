@@ -126,8 +126,8 @@ void handlePacket(void)
             uint8_t copyLen = (len < sizeof(text) - 1) ? len : (uint8_t)(sizeof(text) - 1);
             memcpy(text, data, copyLen);
             ssd1306_Fill(Black);
-            ssd1306_SetCursor(0, 0);
-            ssd1306_WriteString(text, Font_7x10, White);
+            ssd1306_SetCursor(10, 15);
+            ssd1306_WriteString(text, Font_16x26, White);
             ssd1306_UpdateScreen();
             printf("[PKT] Set_Display_Text: \"%s\"\n", text);
             break;
