@@ -115,7 +115,7 @@ int main(void)
 
     if (lastKeyState == GPIO_PIN_SET && currentKeyState == GPIO_PIN_RESET)
     {
-      Beep_Start(1000);
+      Beep_Start(100);
       Serial_Send_Key1();
     }
 
@@ -123,7 +123,7 @@ int main(void)
 
     if(RxTemp != 0)
     {
-      Beep_Start(1000);
+      Beep_Start(100);
       RxTemp = 0;
     }
 
