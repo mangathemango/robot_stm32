@@ -103,7 +103,7 @@ void handlePacket(void)
             if (len != 0x01) break;
             uint8_t angle = data[0];    // 0–180
             // TODO: Set_Yaw_Servo_Angle(angle);
-            PwmServo_Set_Angle(YAW_SERVO, angle, 100);
+            PwmServo_Set_Angle(YAW_SERVO, angle, DEFAULT_TIME);
             printf("[PKT] Set_Yaw_Servo_Angle: %u\n", angle);
             break;
         }
@@ -115,7 +115,7 @@ void handlePacket(void)
             if (len != 0x01) break;
             uint8_t angle = data[0];    // 0–180
             // TODO: Set_Claw_Servo_Angle(angle);
-            PwmServo_Set_Angle(CLAW_SERVO, angle, 100);
+            PwmServo_Set_Angle(CLAW_SERVO, angle, DEFAULT_TIME);
             printf("[PKT] Set_Claw_Servo_Angle: %u\n", angle);
             break;
         }
