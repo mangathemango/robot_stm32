@@ -16,6 +16,6 @@
 
 // Function declarations
 void PwmServo_Init(void);
-void PwmServo_Set_Angle(uint8_t index, uint8_t angle);
-void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4);
+void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time);
+void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint16_t time);
 void PwmServo_Handle(void);
