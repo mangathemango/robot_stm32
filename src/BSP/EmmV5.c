@@ -183,6 +183,7 @@ void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
     cmd[10] = (uint8_t)raF;
     cmd[11] = (uint8_t)snF;
     cmd[12] = 0x6B;
+
     can_SendCmd(cmd, 13); // auto-split: packet0 (8B) + packet1 (5B)
 }
 
