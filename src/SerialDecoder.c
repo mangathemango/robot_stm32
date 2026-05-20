@@ -177,7 +177,7 @@ void handlePacket(void)
     {
         if (len != 0x00)
             break;
-        Beep_Start(100);
+        Beep_Start(10);
         printf("[PKT] Beep\n");
         break;
     }
