@@ -164,20 +164,21 @@ int16_t CAN_ReadVelocity(uint8_t addr, uint32_t timeout_ms)
  *  Same unit as the 'clk' param in Emm_V5_Pos_Control()
  *  Returns INT32_MIN on timeout
  * --------------------------------------------------------------- */
-int32_t CAN_ReadPulses(uint8_t addr, uint32_t timeout_ms)
+float CAN_ReadRevs(uint8_t addr, uint32_t timeout_ms)
 {
     if (addr < 1 || addr > MAX_MOTORS)
-        return INT32_MIN;
+        return -99999.0f;
     uint8_t idx = addr - 1;
 
     can.motor[idx].pos_updated = false;
-    Read_Sys_Params(addr, S_PULSES); // sends function code 0x32
+    Read_Sys_Params(addr, S_PULSES);
 
     uint32_t start = HAL_GetTick();
     while (!can.motor[idx].pos_updated)
     {
         if ((HAL_GetTick() - start) >= timeout_ms)
-            return INT32_MIN;
+            return -99999.0f;
     }
-    return can.motor[idx].pulses;
+
+    return (float)can.motor[idx].pulses / PULSES_PER_REV;
 }

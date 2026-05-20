@@ -139,11 +139,6 @@ int main(void)
 
   // Position Control
 
-  Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 200, 50, 50, false, false);
-  HAL_Delay(1);
-  Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 200, 50, 50, false, false);
-  HAL_Delay(1);
-
   ssd1306_Fill(Black);
   ssd1306_SetCursor(0, 0);
   /* USER CODE END 2 */
@@ -151,12 +146,7 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
-    int32_t pos5 = CAN_ReadPulses(0x05, 100);
-    int32_t pos6 = CAN_ReadPulses(0x06, 100);
 
-    printf("Position of: pos5 %ld \n Position of pos6: %ld", pos5, pos6);
-
-    HAL_Delay(50);
     /* USER CODE END 3 */
   }
   /* USER CODE END 3 */
