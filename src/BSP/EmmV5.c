@@ -383,3 +383,59 @@ void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id)
     uint8_t cmd[6] = {addr, 0xAE, 0x4B, (uint8_t)svF, new_id, 0x6B};
     can_SendCmd(cmd, 6);
 }
+
+void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
+{
+    // Front wheel FL
+    if (vfl <= 0)
+    {
+
+        Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CCW, vfl, 50, false);
+    }
+    if (vfl > 0)
+    {
+
+        Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CW, vfl, 50, false);
+    }
+
+    HAL_Delay(100);
+
+    // Front wheel FR
+
+    if (vfr <= 0)
+    {
+        Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CCW, vfr, 50, false);
+    }
+    if (vfr > 0)
+    {
+        Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CW, vfr, 50, false);
+    }
+
+    HAL_Delay(100);
+
+    // Back wheel BL
+
+    if (vrl <= 0)
+    {
+        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CCW, vrl, 50, false);
+    }
+    if (vrl > 0)
+    {
+        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrl, 50, false);
+    }
+
+    HAL_Delay(100);
+
+    // Front wheel BR
+
+    if (vrr <= 0)
+    {
+        Vel_Control(BACK_RIGHT_MOTOR, MOTOR_DIR_CCW, vrr, 50, false);
+    }
+    if (vrr > 0)
+    {
+        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrr, 50, false);
+    }
+
+    HAL_Delay(100);
+}

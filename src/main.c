@@ -105,34 +105,32 @@ int main(void)
   MX_DMA_Init();
   MX_TIM7_Init();
   MX_CAN_Init();
-
-  /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim7);
+  MX_I2C2_Init();
   PwmServo_Init();
   MX_USART1_UART_Init();
   USART1_Init();
-  MX_I2C2_Init();
+  HAL_TIM_Base_Start_IT(&htim7);
   ssd1306_Init();
+
+  /* USER CODE BEGIN 2 */
   CAN_Start();
 
   En_Control(TOP_LEFT_MOTOR, true, false);
+  HAL_Delay(1);
   En_Control(TOP_RIGHT_MOTOR, true, false);
+  HAL_Delay(1);
   En_Control(BACK_LEFT_MOTOR, true, false);
+  HAL_Delay(1);
   En_Control(BACK_RIGHT_MOTOR, true, false);
-
-  En_Control(VER_MOTOR, true, false);
-  En_Control(HOR_MOTOR, true, false);
+  HAL_Delay(1);
 
   HAL_Delay(100);
-
-  Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CCW, 100, 50, false);
-
-  ssd1306_Fill(Black);
-  ssd1306_SetCursor(0, 0);
+  // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */
 
   while (1)
   {
+    Beep_Update();
   }
 }
 
@@ -189,6 +187,7 @@ static void MX_I2C2_Init(void)
   /* USER CODE END I2C2_Init 0 */
 
   /* USER CODE BEGIN I2C2_Init 1 */
+  __HAL_RCC_I2C2_CLK_ENABLE();
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;

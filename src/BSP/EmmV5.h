@@ -205,4 +205,6 @@ void Modify_Ctrl_Mode(uint8_t addr, bool svF, uint8_t ctrl_mode);
 /** Change motor CAN address (takes effect immediately; save with svF=true). */
 void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id);
 
+void Send_Velocities(int16_t vtl, int16_t vtr, int16_t vrl, int16_t vrr);
+
 #endif /* __EMM_V5_H */

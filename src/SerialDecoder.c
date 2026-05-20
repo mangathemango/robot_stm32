@@ -194,58 +194,7 @@ void handlePacket(void)
         int16_t vrl = (int16_t)(data[4] | (data[5] << 8));
         int16_t vrr = (int16_t)(data[6] | (data[7] << 8));
 
-        // Front wheel FL
-        if (vfl <= 0)
-        {
-
-            Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CCW, vfl, 50, false);
-        }
-        else if (vfl > 0)
-        {
-
-            Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CW, vfl, 50, false);
-        }
-
-        HAL_Delay(1);
-
-        // Front wheel FR
-
-        if (vfr <= 0)
-        {
-            Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CCW, vfr, 50, false);
-        }
-        else if (vfr > 0)
-        {
-            Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CW, vfr, 50, false);
-        }
-
-        HAL_Delay(1);
-
-        // Back wheel BL
-
-        if (vrl <= 0)
-        {
-            Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CCW, vrl, 50, false);
-        }
-        else if (vrl > 0)
-        {
-            Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrl, 50, false);
-        }
-
-        HAL_Delay(1);
-
-        // Front wheel BR
-
-        if (vrr <= 0)
-        {
-            Vel_Control(BACK_RIGHT_MOTOR, MOTOR_DIR_CCW, vrr, 50, false);
-        }
-        else if (vrr > 0)
-        {
-            Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrr, 50, false);
-        }
-
-        HAL_Delay(1);
+        Send_Velocities(vfl, vfr, vrl, vrr);
 
         printf("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n",
                vfl, vfr, vrl, vrr);
