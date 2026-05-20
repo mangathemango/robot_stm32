@@ -75,7 +75,7 @@ void NMI_Handler(void)
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-  while (1)
+   while (1)
   {
   }
   /* USER CODE END NonMaskableInt_IRQn 1 */
@@ -204,6 +204,8 @@ void SysTick_Handler(void)
 /**
  * @brief This function handles DMA1 channel4 global interrupt.
  */
+  * @brief This function handles DMA1 channel4 global interrupt.
+  */
 void DMA1_Channel4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
@@ -232,6 +234,8 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 /**
  * @brief This function handles USART1 global interrupt.
  */
+  * @brief This function handles USART1 global interrupt.
+  */
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
@@ -246,6 +250,8 @@ void USART1_IRQHandler(void)
 /**
  * @brief This function handles TIM7 global interrupt.
  */
+  * @brief This function handles TIM7 global interrupt.
+  */
 void TIM7_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM7_IRQn 0 */
