@@ -106,7 +106,6 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Yaw_Servo_Angle(angle);
         PwmServo_Set_Angle(YAW_SERVO, angle);
-        HAL_Delay(DEFAULT_TIME);
         printf("[PKT] Set_Yaw_Servo_Angle: %u\n", angle);
         break;
     }
@@ -120,7 +119,6 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Claw_Servo_Angle(angle);
         PwmServo_Set_Angle(CLAW_SERVO, angle);
-        HAL_Delay(DEFAULT_TIME);
         printf("[PKT] Set_Claw_Servo_Angle: %u\n", angle);
         break;
     }
@@ -150,8 +148,6 @@ void handlePacket(void)
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
         Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
-
-        HAL_Delay(1);
 
         printf("[PKT] Set_Vertical_Arm_Position: %u\n", position);
         break;

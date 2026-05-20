@@ -124,6 +124,7 @@ int main(void)
   En_Control(BACK_RIGHT_MOTOR, true, false);
   HAL_Delay(1);
 
+  Send_Velocities(50, 50, 50, 50);
   HAL_Delay(100);
   // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */

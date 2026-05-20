@@ -398,8 +398,6 @@ void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
         Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CW, vfl, 50, false);
     }
 
-    HAL_Delay(100);
-
     // Front wheel FR
 
     if (vfr <= 0)
@@ -410,8 +408,6 @@ void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
     {
         Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CW, vfr, 50, false);
     }
-
-    HAL_Delay(100);
 
     // Back wheel BL
 
@@ -424,8 +420,6 @@ void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
         Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrl, 50, false);
     }
 
-    HAL_Delay(100);
-
     // Front wheel BR
 
     if (vrr <= 0)
@@ -434,8 +428,6 @@ void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
     }
     if (vrr > 0)
     {
-        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrr, 50, false);
+        Vel_Control(BACK_RIGHT_MOTOR, MOTOR_DIR_CW, vrr, 50, false);
     }
-
-    HAL_Delay(100);
 }
