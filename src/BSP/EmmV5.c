@@ -384,50 +384,77 @@ void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id)
     can_SendCmd(cmd, 6);
 }
 
+/* ================================================================
+ *  Non-blocking wheel velocity dispatch
+ * ================================================================ */
+typedef struct
+{
+    int16_t vfl;
+    int16_t vfr;
+    int16_t vrl;
+    int16_t vrr;
+    uint8_t step;
+    uint32_t next_due_ms;
+    bool active;
+} WheelVelocityQueue_t;
+
+static volatile WheelVelocityQueue_t wheelQueue = {0};
+static const uint32_t wheelVelocityGapMs = 1U;
+
+static void SendSingleWheelVelocity(uint8_t motorAddr, int16_t targetVelocity)
+{
+    if (targetVelocity < 0)
+    {
+        Vel_Control(motorAddr, MOTOR_DIR_CCW, (uint16_t)ABS(targetVelocity), 50, false);
+    }
+    else
+    {
+        Vel_Control(motorAddr, MOTOR_DIR_CW, (uint16_t)targetVelocity, 50, false);
+    }
+}
+
+void MotorVelocity_Task(void)
+{
+    if (!wheelQueue.active)
+        return;
+
+    uint32_t now = HAL_GetTick();
+    if ((int32_t)(now - wheelQueue.next_due_ms) < 0)
+        return;
+
+    switch (wheelQueue.step)
+    {
+    case 0:
+        SendSingleWheelVelocity(TOP_LEFT_MOTOR, wheelQueue.vfl);
+        break;
+    case 1:
+        SendSingleWheelVelocity(TOP_RIGHT_MOTOR, wheelQueue.vfr);
+        break;
+    case 2:
+        SendSingleWheelVelocity(BACK_LEFT_MOTOR, wheelQueue.vrl);
+        break;
+    case 3:
+        SendSingleWheelVelocity(BACK_RIGHT_MOTOR, wheelQueue.vrr);
+        break;
+    default:
+        wheelQueue.active = false;
+        return;
+    }
+
+    wheelQueue.step++;
+    wheelQueue.next_due_ms = now + wheelVelocityGapMs;
+
+    if (wheelQueue.step >= 4)
+        wheelQueue.active = false;
+}
+
 void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
 {
-    // Front wheel FL
-    if (vfl <= 0)
-    {
-
-        Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CCW, vfl, 50, false);
-    }
-    if (vfl > 0)
-    {
-
-        Vel_Control(TOP_LEFT_MOTOR, MOTOR_DIR_CW, vfl, 50, false);
-    }
-
-    // Front wheel FR
-
-    if (vfr <= 0)
-    {
-        Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CCW, vfr, 50, false);
-    }
-    if (vfr > 0)
-    {
-        Vel_Control(TOP_RIGHT_MOTOR, MOTOR_DIR_CW, vfr, 50, false);
-    }
-
-    // Back wheel BL
-
-    if (vrl <= 0)
-    {
-        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CCW, vrl, 50, false);
-    }
-    if (vrl > 0)
-    {
-        Vel_Control(BACK_LEFT_MOTOR, MOTOR_DIR_CW, vrl, 50, false);
-    }
-
-    // Front wheel BR
-
-    if (vrr <= 0)
-    {
-        Vel_Control(BACK_RIGHT_MOTOR, MOTOR_DIR_CCW, vrr, 50, false);
-    }
-    if (vrr > 0)
-    {
-        Vel_Control(BACK_RIGHT_MOTOR, MOTOR_DIR_CW, vrr, 50, false);
-    }
+    wheelQueue.vfl = vfl;
+    wheelQueue.vfr = vfr;
+    wheelQueue.vrl = vrl;
+    wheelQueue.vrr = vrr;
+    wheelQueue.step = 0;
+    wheelQueue.next_due_ms = HAL_GetTick();
+    wheelQueue.active = true;
 }

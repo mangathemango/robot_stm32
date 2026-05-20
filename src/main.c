@@ -131,6 +131,7 @@ int main(void)
 
   while (1)
   {
+    MotorVelocity_Task();
     Beep_Update();
   }
 }
