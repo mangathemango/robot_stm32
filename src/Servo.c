@@ -2,6 +2,8 @@
 
 static uint16_t servoPulse[4];
 static uint16_t pwmCount = 0;
+static uint16_t servoTimer[4]; //in ms
+static uint8_t msTickCount = 0;
 
 // Convert angle (0-180) to pulse width
 
@@ -15,10 +17,10 @@ static uint16_t PwmServo_Angle_To_Pulse(uint8_t angle)
 void PwmServo_Init(void)
 {
     // Start all servos at 90 degrees
-    PwmServo_Set_Angle_All(90, 90, 90, 90);
+    PwmServo_Set_Angle_All(90, 90, 90, 90, 100);
 }
 
-void PwmServo_Set_Angle(uint8_t index, uint8_t angle)
+void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time)
 {
     if(index > 3)
         return;
@@ -27,43 +29,57 @@ void PwmServo_Set_Angle(uint8_t index, uint8_t angle)
         angle = 180;
 
     servoPulse[index] = PwmServo_Angle_To_Pulse(angle);
+    servoTimer[index] = time;
 }
 
-void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4)
+void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4, uint16_t time)
 {
-    PwmServo_Set_Angle(0, a1);
-    PwmServo_Set_Angle(1, a2);
-    PwmServo_Set_Angle(2, a3);
-    PwmServo_Set_Angle(3, a4);
+    PwmServo_Set_Angle(0, a1, time);
+    PwmServo_Set_Angle(1, a2, time);
+    PwmServo_Set_Angle(2, a3, time);
+    PwmServo_Set_Angle(3, a4, time);
 }
 
 void PwmServo_Handle(void)
 {
+    msTickCount++;
+    if(msTickCount >= 100)
+    {
+        msTickCount = 0;
+        for(int i = 0; i < 4; i++)
+        {
+            if(servoTimer[i] > 0)
+            {
+                servoTimer[i]--;
+            }
+        }
+    }
+
     pwmCount++;
 
     if(pwmCount >= 200)
         pwmCount = 0;
 
     // Servo 1
-    if(pwmCount < servoPulse[0])
+    if(pwmCount < servoPulse[0] && servoTimer[0] > 0)
         SERVO1_HIGH();
     else
         SERVO1_LOW();
 
     // Servo 2
-    if(pwmCount < servoPulse[1])
+    if(pwmCount < servoPulse[1] && servoTimer[1] > 0)
         SERVO2_HIGH();
     else
         SERVO2_LOW();
 
     // Servo 3
-    if(pwmCount < servoPulse[2])
+    if(pwmCount < servoPulse[2] && servoTimer[2] > 0)
         SERVO3_HIGH();
     else
         SERVO3_LOW();
 
     // Servo 4
-    if(pwmCount < servoPulse[3])
+    if(pwmCount < servoPulse[3] && servoTimer[3] > 0)
         SERVO4_HIGH();
     else
         SERVO4_LOW();
