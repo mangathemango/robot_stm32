@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "EmmV5.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -65,7 +66,11 @@ static void MX_CAN_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int __io_putchar(int ch)
+{
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
+}
 /* USER CODE END 0 */
 
 /**
@@ -106,35 +111,37 @@ int main(void)
   /* USER CODE BEGIN 2 */
   CAN_Start();
 
-  Emm_V5_En_Control(0x01, true, false);
-  Emm_V5_En_Control(0x02, true, false);
-  Emm_V5_En_Control(0x03, true, false);
-  Emm_V5_En_Control(0x04, true, false);
+  En_Control(TOP_LEFT_MOTOR, true, false);
+  En_Control(TOP_RIGHT_MOTOR, true, false);
+  En_Control(BACK_LEFT_MOTOR, true, false);
+  En_Control(BACK_RIGHT_MOTOR, true, false);
+
+  En_Control(VER_MOTOR, true, false);
+  En_Control(HOR_MOTOR, true, false);
 
   HAL_Delay(100);
 
-  Emm_V5_Vel_Control(0x01, MOTOR_DIR_CW, 100, 50, false);
-  HAL_Delay(100);
-  Emm_V5_Vel_Control(0x02, MOTOR_DIR_CW, 100, 50, false);
-  HAL_Delay(100);
-  Emm_V5_Vel_Control(0x03, MOTOR_DIR_CW, 100, 50, false);
+  // Velocity Control
 
-  HAL_Delay(100);
-  Emm_V5_Vel_Control(0x04, MOTOR_DIR_CW, 100, 50, false);
+  // Position Control
 
-  HAL_Delay(100);
+  Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 200, 50, 50, false, false);
+  HAL_Delay(1);
+  Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 200, 50, 50, false, false);
+  HAL_Delay(1);
 
   /* USER CODE END 2 */
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
+    int32_t pos5 = CAN_ReadPulses(0x05, 100);
+    int32_t pos6 = CAN_ReadPulses(0x06, 100);
+
+    printf("Position of: pos5 %ld \n Position of pos6: %ld", pos5, pos6);
+
+    HAL_Delay(50);
+    /* USER CODE END 3 */
   }
   /* USER CODE END 3 */
 }

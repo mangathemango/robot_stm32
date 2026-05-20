@@ -6,7 +6,7 @@
 #include <string.h>
 
 /* ---------------------------------------------------------------
- *  CAN RX Frame struct (mirrors HAL's CAN_RxHeaderTypeDef + data)
+ *  CAN RX Frame
  * --------------------------------------------------------------- */
 typedef struct
 {
@@ -15,41 +15,52 @@ typedef struct
 } CAN_RxFrame_t;
 
 /* ---------------------------------------------------------------
+ *  Per-motor data — populated automatically by the RX callback
+ * --------------------------------------------------------------- */
+#define MAX_MOTORS 6 // supports addresses 0x01 to 0x06
+
+typedef struct
+{
+    int16_t rpm;      // signed RPM  (from 0x35 response)
+    bool vel_updated; // true when fresh velocity data arrived
+
+    int32_t pulses;   // signed pulse count (from 0x32 response)
+    bool pos_updated; // true when fresh pulse data arrived
+} MotorData_t;
+
+/* ---------------------------------------------------------------
  *  CAN driver state
  * --------------------------------------------------------------- */
 typedef struct
 {
     CAN_RxFrame_t rxFrame;
-    volatile bool rxFrameFlag; // set true by RX interrupt, cleared by user
+    volatile bool rxFrameFlag;
+    MotorData_t motor[MAX_MOTORS]; // motor[0] = addr 0x01, etc.
 } CAN_t;
 
 /* ---------------------------------------------------------------
- *  Extern handle — defined in main.c by CubeMX
+ *  Externs
  * --------------------------------------------------------------- */
 extern CAN_HandleTypeDef hcan;
-
-/* ---------------------------------------------------------------
- *  Extern driver state — defined in can.c
- * --------------------------------------------------------------- */
 extern volatile CAN_t can;
 
 /* ---------------------------------------------------------------
  *  Public API
  * --------------------------------------------------------------- */
-
-/**
- * @brief  Call once after MX_CAN_Init() to configure the RX filter
- *         and start the peripheral + interrupts.
- */
 HAL_StatusTypeDef CAN_Start(void);
+void can_SendCmd(volatile uint8_t *cmd, uint8_t len);
 
 /**
- * @brief  Send a raw command buffer following the ZDT packet protocol.
- *         cmd[0]  = motor address (Addr)
- *         cmd[1]  = function code
- *         cmd[2…] = payload + checksum byte at the end
- *         len     = total number of bytes in cmd[]
+ * @brief  Request and return real-time velocity (RPM) from one motor.
+ *         Returns 0x7FFF on timeout.
  */
-void can_SendCmd(volatile uint8_t *cmd, uint8_t len);
+int16_t CAN_ReadVelocity(uint8_t addr, uint32_t timeout_ms);
+
+/**
+ * @brief  Request and return the accumulated input pulse count from one motor.
+ *         This matches the 'clk' unit used in Emm_V5_Pos_Control().
+ *         Returns INT32_MIN on timeout.
+ */
+int32_t CAN_ReadPulses(uint8_t addr, uint32_t timeout_ms);
 
 #endif /* __CAN_H */
