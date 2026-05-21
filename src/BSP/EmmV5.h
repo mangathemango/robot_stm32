@@ -212,4 +212,13 @@ void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id);
 void MotorVelocity_Task(void);
 void Send_Velocities(int16_t vtl, int16_t vtr, int16_t vrl, int16_t vrr);
 
+/**
+ * Send velocities with explicit per-wheel direction flags.
+ * dir = MOTOR_DIR_CW or MOTOR_DIR_CCW for each wheel.
+ */
+void Send_Velocities_WithDirs(int16_t vfl, uint8_t dirfl,
+                              int16_t vfr, uint8_t dirfr,
+                              int16_t vrl, uint8_t dirrl,
+                              int16_t vrr, uint8_t dirrr);
+
 #endif /* __EMM_V5_H */
