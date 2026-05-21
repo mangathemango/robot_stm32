@@ -128,6 +128,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
   CAN_Start();
 
+  // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
+
+  // CAN RX highest — motor data must never be delayed
+  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
+
+  // DMA (UART TX complete) just below CAN
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
+
+  // USART1 below DMA
+  HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
+
+  // TIM7 (servo PWM) lowest — jitter here is fine
+  HAL_NVIC_SetPriority(TIM7_IRQn, 3, 0);
+
   En_Control(TOP_LEFT_MOTOR, true, false);
   HAL_Delay(1);
   En_Control(TOP_RIGHT_MOTOR, true, false);
