@@ -139,7 +139,7 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
  *  raF: false=relative, true=absolute
  *  snF: sync flag */
 void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float rev, bool raF, bool snF);
+                 float revs, bool raF, bool snF);
 
 /** Fast position — step 1: set speed/acc/mode once.
  *  move_mode: MOVE_RELATIVE_PREV / MOVE_ABSOLUTE / MOVE_RELATIVE_NOW */
@@ -204,5 +204,21 @@ void Modify_Ctrl_Mode(uint8_t addr, bool svF, uint8_t ctrl_mode);
 
 /** Change motor CAN address (takes effect immediately; save with svF=true). */
 void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id);
+
+/** Queue four wheel velocity commands with a non-blocking gap between frames.
+ *  Call Send_Velocities() from the ISR or parser, and MotorVelocity_Task()
+ *  from the main loop.
+ */
+void MotorVelocity_Task(void);
+void Send_Velocities(int16_t vtl, int16_t vtr, int16_t vrl, int16_t vrr);
+
+/**
+ * Send velocities with explicit per-wheel direction flags.
+ * dir = MOTOR_DIR_CW or MOTOR_DIR_CCW for each wheel.
+ */
+void Send_Velocities_WithDirs(int16_t vfl, uint8_t dirfl,
+                              int16_t vfr, uint8_t dirfr,
+                              int16_t vrl, uint8_t dirrl,
+                              int16_t vrr, uint8_t dirrr);
 
 #endif /* __EMM_V5_H */

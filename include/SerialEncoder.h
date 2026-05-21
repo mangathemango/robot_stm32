@@ -6,16 +6,17 @@
 // ── Protocol constants ────────────────────────────────────────────────────────
 // START_BYTE already defined in SerialDecoder.h — only define if standalone
 #ifndef START_BYTE
-    #define START_BYTE 0x67
+#define START_BYTE 0x67
 #endif
 
 // ── Outgoing Command IDs (STM32 -> Pi) ───────────────────────────────────────
-typedef enum {
-    CMD_OUT_LOG                      = 0x50,
-    CMD_OUT_WHEEL_VELOCITIES         = 0x51,
-    CMD_OUT_KEY1                     = 0x52,
-    CMD_OUT_HORIZONTAL_ARM_POSITION  = 0x53,
-    CMD_OUT_VERTICAL_ARM_POSITION    = 0x54,
+typedef enum
+{
+    CMD_OUT_LOG = 0x50,
+    CMD_OUT_WHEEL_VELOCITIES = 0x51,
+    CMD_OUT_KEY1 = 0x52,
+    CMD_OUT_HORIZONTAL_ARM_POSITION = 0x53,
+    CMD_OUT_VERTICAL_ARM_POSITION = 0x54,
 } OutCommandID;
 
 // ── Public API ────────────────────────────────────────────────────────────────
