@@ -405,11 +405,11 @@ static void SendSingleWheelVelocity(uint8_t motorAddr, int16_t targetVelocity)
 {
     if (targetVelocity < 0)
     {
-        Vel_Control(motorAddr, MOTOR_DIR_CCW, (uint16_t)ABS(targetVelocity), 50, false);
+        Vel_Control(motorAddr, MOTOR_DIR_CCW, (uint16_t)ABS(targetVelocity), 0, false);
     }
     else
     {
-        Vel_Control(motorAddr, MOTOR_DIR_CW, (uint16_t)targetVelocity, 50, false);
+        Vel_Control(motorAddr, MOTOR_DIR_CW, (uint16_t)targetVelocity, 0, false);
     }
 }
 
