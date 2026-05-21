@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include "Servo.h"
 #include "Serial.h"
+#include "SerialEncoder.h"
 #include "Beep.h"
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
@@ -72,6 +73,17 @@ static void MX_I2C2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void PollMotorTelemetry(void)
+{
+  /* Request each motor's current state; CAN RX callback forwards the reply to UART. */
+  (void)CAN_ReadVelocity(TOP_LEFT_MOTOR, 10);
+  (void)CAN_ReadVelocity(TOP_RIGHT_MOTOR, 10);
+  (void)CAN_ReadVelocity(BACK_LEFT_MOTOR, 10);
+  (void)CAN_ReadVelocity(BACK_RIGHT_MOTOR, 10);
+  (void)CAN_ReadRevs(VER_MOTOR, 10);
+  (void)CAN_ReadRevs(HOR_MOTOR, 10);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -129,9 +141,26 @@ int main(void)
   // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */
 
+  static uint8_t key1_prev = 1;
+  uint32_t next_telemetry_ms = HAL_GetTick();
+
   while (1)
   {
     MotorVelocity_Task();
+
+    if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
+    {
+      PollMotorTelemetry();
+      next_telemetry_ms = HAL_GetTick() + 100U;
+    }
+
+    uint8_t key1_now = HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin);
+    if (key1_prev == 1 && key1_now == 0)
+    {
+      Beep_Start(100);
+      Serial_Send_Key1();
+    }
+    key1_prev = key1_now;
     Beep_Update();
   }
 }
