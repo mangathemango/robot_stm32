@@ -139,31 +139,26 @@ void handlePacket(void)
         break;
     }
 
-    // ── 0x06  Set_Vertical_Arm_Position ──────────────────────────────────
-    // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
+        // ── 0x06  Set_Vertical_Arm_Position ──────────────────────────────────
+        // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
     case CMD_SET_VERTICAL_ARM_POSITION:
     {
         if (len != 0x02)
             break;
-        uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
-
-        Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
-
-        printf("[PKT] Set_Vertical_Arm_Position: %u\n", position);
+        uint16_t position = (uint16_t)(data[0] | (data[1] << 8));
+        float revs = (float)position / 1000.0f; // undo the *1000 scaling
+        Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 1000, 50, revs, true, false);
         break;
     }
-
-    // ── 0x07  Set_Horizontal_Arm_Position ────────────────────────────────
-    // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
+        // ── 0x07  Set_Horizontal_Arm_Position ────────────────────────────────
+        // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
     case CMD_SET_HORIZONTAL_ARM_POSITION:
     {
         if (len != 0x02)
             break;
-        uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
-
-        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
-
-        printf("[PKT] Set_Horizontal_Arm_Position: %u\n", position);
+        uint16_t position = (uint16_t)(data[0] | (data[1] << 8));
+        float revs = (float)position / 1000.0f;
+        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, revs, true, false);
         break;
     }
 
