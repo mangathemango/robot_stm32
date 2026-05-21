@@ -119,10 +119,10 @@ int main(void)
   MX_TIM7_Init();
   MX_CAN_Init();
   MX_I2C2_Init();
-  PwmServo_Init();
   MX_USART1_UART_Init();
   USART1_Init();
   HAL_TIM_Base_Start_IT(&htim7);
+  PwmServo_Init();
   ssd1306_Init();
 
   /* USER CODE BEGIN 2 */
@@ -395,7 +395,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_3_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* Configure GPIO pin: SERVO_2_Pin */
