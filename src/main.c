@@ -145,7 +145,7 @@ int main(void)
   static uint8_t key1_prev = 1;
   uint32_t next_telemetry_ms = HAL_GetTick();
 
-  0 while (1)
+  while (1)
   {
     MotorVelocity_Task();
 
