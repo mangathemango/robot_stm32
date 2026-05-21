@@ -27,6 +27,7 @@
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
 #include "ssd1306_conf.h"
+#include "Button.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -144,7 +145,7 @@ int main(void)
   static uint8_t key1_prev = 1;
   uint32_t next_telemetry_ms = HAL_GetTick();
 
-  while (1)
+  0 while (1)
   {
     MotorVelocity_Task();
 
@@ -371,12 +372,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /* Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | SERVO_4_Pin | BEEP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin, GPIO_PIN_RESET);
 
   /* Configure GPIO pins: LED_Pin SERVO_1_Pin SERVO_3_Pin SERVO_4_Pin BEEP_Pin */
-  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_3_Pin | SERVO_4_Pin | BEEP_Pin;
+  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_3_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -400,6 +402,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(KEY1_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = KEY2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(KEY2_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
