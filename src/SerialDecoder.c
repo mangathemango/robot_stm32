@@ -72,8 +72,8 @@ void handleSerialData(uint8_t byte)
     if (computed != received)
     {
         // Bad checksum — discard packet and re-sync
-        printf("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n",
-               computed, received);
+        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n",
+                        computed, received);
         bufIndex = 0;
         return;
     }
@@ -106,7 +106,7 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Yaw_Servo_Angle(angle);
         PwmServo_Set_Angle(YAW_SERVO, angle, DEFAULT_TIME);
-        printf("[PKT] Set_Yaw_Servo_Angle: %u\n", angle);
+        Serial_Send_Log("[PKT] Set_Yaw_Servo_Angle: %u\n", angle);
         break;
     }
 
@@ -119,7 +119,7 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Claw_Servo_Angle(angle);
         PwmServo_Set_Angle(CLAW_SERVO, angle, DEFAULT_TIME);
-        printf("[PKT] Set_Claw_Servo_Angle: %u\n", angle);
+        Serial_Send_Log("[PKT] Set_Claw_Servo_Angle: %u\n", angle);
         break;
     }
 
@@ -135,7 +135,7 @@ void handlePacket(void)
         ssd1306_SetCursor(10, 15);
         ssd1306_WriteString(text, Font_16x26, White);
         ssd1306_UpdateScreen();
-        printf("[PKT] Set_Display_Text: \"%s\"\n", text);
+        Serial_Send_Log("[PKT] Set_Display_Text: \"%s\"\n", text);
         break;
     }
 
@@ -169,7 +169,7 @@ void handlePacket(void)
         if (len != 0x00)
             break;
         Beep_Start(10);
-        printf("[PKT] Beep\n");
+        Serial_Send_Log("[PKT] Beep\n");
         break;
     }
 
@@ -187,13 +187,13 @@ void handlePacket(void)
 
         Send_Velocities(vfl, vfr, vrl, vrr);
 
-        printf("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n",
-               vfl, vfr, vrl, vrr);
+        Serial_Send_Log("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n",
+                        vfl, vfr, vrl, vrr);
         break;
     }
 
     default:
-        printf("[SerialDecoder] Unknown command ID: 0x%02X\n", id);
+        Serial_Send_Log("[SerialDecoder] Unknown command ID: 0x%02X\n", id);
         break;
     }
 }

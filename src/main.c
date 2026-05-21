@@ -119,14 +119,28 @@ int main(void)
   MX_TIM7_Init();
   MX_CAN_Init();
   MX_I2C2_Init();
-  PwmServo_Init();
   MX_USART1_UART_Init();
   USART1_Init();
   HAL_TIM_Base_Start_IT(&htim7);
+  PwmServo_Init();
   ssd1306_Init();
 
   /* USER CODE BEGIN 2 */
   CAN_Start();
+
+  // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
+
+  // CAN RX highest — motor data must never be delayed
+  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
+
+  // DMA (UART TX complete) just below CAN
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
+
+  // USART1 below DMA
+  HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
+
+  // TIM7 (servo PWM) lowest — jitter here is fine
+  HAL_NVIC_SetPriority(TIM7_IRQn, 3, 0);
 
   En_Control(TOP_LEFT_MOTOR, true, false);
   HAL_Delay(1);
@@ -382,7 +396,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_3_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* Configure GPIO pin: SERVO_2_Pin */

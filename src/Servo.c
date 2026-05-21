@@ -11,7 +11,7 @@ static uint8_t msTickCount = 0;
 // 180 deg -> 2.5ms
 static uint16_t PwmServo_Angle_To_Pulse(uint8_t angle)
 {
-    return 5 + (angle * 20 / 180);
+    return 5 + (angle * 200 / 180);
 }
 
 void PwmServo_Init(void)
@@ -56,7 +56,7 @@ void PwmServo_Handle(void)
 
     pwmCount++;
 
-    if(pwmCount >= 200)
+    if(pwmCount >= 2000)
         pwmCount = 0;
 
     // Servo 1
