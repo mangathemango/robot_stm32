@@ -64,10 +64,10 @@ extern "C"
 #define SERVO_1_GPIO_Port GPIOC
 #define SERVO_2_Pin GPIO_PIN_1
 #define SERVO_2_GPIO_Port GPIOC
-#define SERVO_3_Pin GPIO_PIN_2
-#define SERVO_3_GPIO_Port GPIOC
-#define KEY2_Pin GPIO_PIN_3
+#define KEY2_Pin GPIO_PIN_2
 #define KEY2_GPIO_Port GPIOC
+#define KEY3_Pin GPIO_PIN_3
+#define KEY3_GPIO_Port GPIOC
 #define BEEP_Pin GPIO_PIN_5
 #define BEEP_GPIO_Port GPIOC
 #define KEY1_Pin GPIO_PIN_2
