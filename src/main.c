@@ -156,9 +156,12 @@ int main(void)
   // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */
 
-  static uint8_t key1_prev = 1;
   uint32_t next_telemetry_ms = HAL_GetTick();
 
+
+  static uint8_t key1_prev = 1;
+  static uint8_t key2_prev = 1;
+  static uint8_t key3_prev = 1;
   while (1)
   {
     MotorVelocity_Task();
@@ -176,7 +179,21 @@ int main(void)
       Beep_Start(100);
       Serial_Send_Key1();
     }
+    uint8_t key2_now = HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin);
+    if (key2_prev == 1 && key2_now == 0)
+    {
+      Beep_Start(100);
+      Serial_Send_Key1();
+    }
+    uint8_t key3_now = HAL_GPIO_ReadPin(KEY3_GPIO_Port, KEY3_Pin);
+    if (key3_prev == 1 && key3_now == 0)
+    {
+      Beep_Start(100);
+      Serial_Send_Key1();
+    }
     key1_prev = key1_now;
+    key2_prev = key2_now;
+    key3_prev = key3_now;
     Beep_Update();
   }
 }
@@ -390,10 +407,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /* Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | BEEP_Pin, GPIO_PIN_RESET);
 
   /* Configure GPIO pins: LED_Pin SERVO_1_Pin SERVO_3_Pin SERVO_4_Pin BEEP_Pin */
-  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin;
+  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_2_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -415,6 +432,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(KEY2_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = KEY3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(KEY3_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -453,7 +475,7 @@ static void DrainSerialQueue(void)
   if (CAN_TakeWheelVelocitySnapshot(&vfl, &vfr, &vrl, &vrr))
     Serial_Send_WheelVelocities(vfl, vfr, vrl, vrr);
 
-  /* Arm positions ¡ª same atomic copy pattern */
+  /* Arm positions ï¿½ï¿½ same atomic copy pattern */
   if (armPosSnap.ver_ready)
   {
     __disable_irq();

@@ -22,7 +22,7 @@ void PwmServo_Init(void)
 
 void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time)
 {
-    if(index > 2)
+    if(index > 1)
         return;
 
     if(angle > 180)
@@ -36,7 +36,6 @@ void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint16_t time)
 {
     PwmServo_Set_Angle(0, a1, time);
     PwmServo_Set_Angle(1, a2, time);
-    PwmServo_Set_Angle(2, a3, time);
 }
 
 void PwmServo_Handle(void)
@@ -57,10 +56,4 @@ void PwmServo_Handle(void)
         SERVO2_HIGH();
     else
         SERVO2_LOW();
-
-    // Servo 3
-    if(pwmCount < servoPulse[2])
-        SERVO3_HIGH();
-    else
-        SERVO3_LOW();
 }
