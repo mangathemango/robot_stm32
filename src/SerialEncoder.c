@@ -37,7 +37,7 @@ static void send_packet(uint8_t id, const uint8_t *data, uint8_t len)
 // LEN = variable  |  data = ASCII string (no null terminator in packet)
 void Serial_Send_Log(const char *text)
 {
-    uint8_t len = (uint8_t)strlen(text);    // truncates silently if >255 — fine for logs
+    uint8_t len = (uint8_t)strlen(text); // truncates silently if >255 — fine for logs
     send_packet(CMD_OUT_LOG, (const uint8_t *)text, len);
 }
 
@@ -46,6 +46,8 @@ void Serial_Send_Log(const char *text)
 void Serial_Send_WheelVelocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
 {
     uint8_t data[8];
+    vfl = -vfl;
+    vrl = -vrl;
     // Little-endian packing
     data[0] = (uint8_t)(vfl & 0xFF);
     data[1] = (uint8_t)((vfl >> 8) & 0xFF);

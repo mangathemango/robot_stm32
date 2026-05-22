@@ -69,6 +69,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_CAN_Init(void);
 static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
+static void DrainSerialQueue(void);
 
 /* USER CODE END PFP */
 
@@ -77,14 +78,13 @@ static void MX_I2C2_Init(void);
 static void PollMotorTelemetry(void)
 {
   /* Request each motor's current state; CAN RX callback forwards the reply to UART. */
-  (void)CAN_ReadVelocity(TOP_LEFT_MOTOR, 10);
-  (void)CAN_ReadVelocity(TOP_RIGHT_MOTOR, 10);
-  (void)CAN_ReadVelocity(BACK_LEFT_MOTOR, 10);
-  (void)CAN_ReadVelocity(BACK_RIGHT_MOTOR, 10);
-  (void)CAN_ReadRevs(VER_MOTOR, 10);
-  (void)CAN_ReadRevs(HOR_MOTOR, 10);
+  Read_Sys_Params(TOP_LEFT_MOTOR, S_VEL);
+  Read_Sys_Params(TOP_RIGHT_MOTOR, S_VEL);
+  Read_Sys_Params(BACK_LEFT_MOTOR, S_VEL);
+  Read_Sys_Params(BACK_RIGHT_MOTOR, S_VEL);
+  Read_Sys_Params(VER_MOTOR, S_PULSES);
+  Read_Sys_Params(HOR_MOTOR, S_PULSES);
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -162,6 +162,7 @@ int main(void)
   while (1)
   {
     MotorVelocity_Task();
+    DrainSerialQueue(); /* <-- add this */
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
     {
@@ -444,6 +445,47 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     PwmServo_Handle();
   }
+}
+
+static void DrainSerialQueue(void)
+{
+  int16_t vfl, vfr, vrl, vrr;
+  if (CAN_TakeWheelVelocitySnapshot(&vfl, &vfr, &vrl, &vrr))
+    Serial_Send_WheelVelocities(vfl, vfr, vrl, vrr);
+
+  /* Arm positions ¡ª same atomic copy pattern */
+  if (armPosSnap.ver_ready)
+  {
+    __disable_irq();
+    int32_t pulses = armPosSnap.ver_pulses;
+    armPosSnap.ver_ready = false;
+    __enable_irq();
+
+    float revs = (float)pulses / (float)PULSES_PER_REV;
+    int32_t scaled = (int32_t)(revs * 1000.0f);
+    if (scaled < 0)
+      scaled = -scaled;
+    if (scaled > 10000)
+      scaled = 10000;
+    Serial_Send_VerticalArmPosition((uint16_t)scaled);
+  }
+  // same pattern for hor
+  if (armPosSnap.hor_ready)
+  {
+    __disable_irq();
+    int32_t pulses = armPosSnap.hor_pulses;
+    armPosSnap.hor_ready = false;
+    __enable_irq();
+
+    float revs = (float)pulses / (float)PULSES_PER_REV;
+    int32_t scaled = (int32_t)(revs * 1000.0f);
+    if (scaled < 0)
+      scaled = -scaled;
+    if (scaled > 10000)
+      scaled = 10000;
+    Serial_Send_HorizontalArmPosition((uint16_t)scaled);
+  }
+  // same pattern for hor
 }
 
 #ifdef USE_FULL_ASSERT
