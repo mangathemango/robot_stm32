@@ -392,18 +392,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin, GPIO_PIN_RESET);
 
   /* Configure GPIO pins: LED_Pin SERVO_1_Pin SERVO_3_Pin SERVO_4_Pin BEEP_Pin */
-  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_3_Pin | BEEP_Pin;
+  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /* Configure GPIO pin: SERVO_2_Pin */
-  GPIO_InitStruct.Pin = SERVO_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(SERVO_2_GPIO_Port, &GPIO_InitStruct);
 
   /* Configure GPIO pins: PB10 PB11 (I2C2 SDA/SCL) */
   GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
