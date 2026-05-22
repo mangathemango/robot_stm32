@@ -139,7 +139,11 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
  *  raF: false=relative, true=absolute
  *  snF: sync flag */
 void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float revs, bool raF, bool snF);
+                 uint32_t clk, bool raF, bool snF);
+
+/** Non-blocking dispatcher for queued position commands.
+ *  Call from the main loop, similar to MotorVelocity_Task(). */
+void MotorPosition_Task(void);
 
 /** Fast position — step 1: set speed/acc/mode once.
  *  move_mode: MOVE_RELATIVE_PREV / MOVE_ABSOLUTE / MOVE_RELATIVE_NOW */

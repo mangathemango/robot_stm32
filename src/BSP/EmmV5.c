@@ -164,27 +164,64 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
     can_SendCmd(cmd, 8);
 }
 
-void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float revs, bool raF, bool snF)
+typedef struct
 {
-    uint8_t cmd[16] = {0};
+    uint8_t addr;
+    uint8_t dir;
+    uint16_t vel;
+    uint8_t acc;
+    uint32_t clk;
+    bool raF;
+    bool snF;
+    uint32_t next_due_ms;
+    bool active;
+} PositionQueue_t;
 
-    uint32_t clk = (uint32_t)(revs * PULSES_PER_REV);
-    cmd[0] = addr;
+static volatile PositionQueue_t posQueue = {0};
+static const uint32_t positionGapMs = 1U;
+
+void MotorPosition_Task(void)
+{
+    if (!posQueue.active)
+        return;
+
+    uint32_t now = HAL_GetTick();
+    if ((int32_t)(now - posQueue.next_due_ms) < 0)
+        return;
+
+    uint8_t cmd[16] = {0};
+    cmd[0] = posQueue.addr;
     cmd[1] = 0xFD;
-    cmd[2] = dir;
-    cmd[3] = (uint8_t)(vel >> 8);
-    cmd[4] = (uint8_t)(vel & 0xFF);
-    cmd[5] = acc;
-    cmd[6] = (uint8_t)(clk >> 24);
-    cmd[7] = (uint8_t)(clk >> 16);
-    cmd[8] = (uint8_t)(clk >> 8);
-    cmd[9] = (uint8_t)(clk & 0xFF);
-    cmd[10] = (uint8_t)raF;
-    cmd[11] = (uint8_t)snF;
+    cmd[2] = posQueue.dir;
+    cmd[3] = (uint8_t)(posQueue.vel >> 8);
+    cmd[4] = (uint8_t)(posQueue.vel & 0xFF);
+    cmd[5] = posQueue.acc;
+    cmd[6] = (uint8_t)(posQueue.clk >> 24);
+    cmd[7] = (uint8_t)(posQueue.clk >> 16);
+    cmd[8] = (uint8_t)(posQueue.clk >> 8);
+    cmd[9] = (uint8_t)(posQueue.clk & 0xFF);
+    cmd[10] = (uint8_t)posQueue.raF;
+    cmd[11] = (uint8_t)posQueue.snF;
     cmd[12] = 0x6B;
 
     can_SendCmd(cmd, 13); // auto-split: packet0 (8B) + packet1 (5B)
+
+    posQueue.next_due_ms = now + positionGapMs;
+    posQueue.active = false;
+}
+
+void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
+                 uint32_t clk, bool raF, bool snF)
+{
+    posQueue.addr = addr;
+    posQueue.dir = dir;
+    posQueue.vel = vel;
+    posQueue.acc = acc;
+    posQueue.clk = clk;
+    posQueue.raF = raF;
+    posQueue.snF = snF;
+    posQueue.next_due_ms = HAL_GetTick();
+    posQueue.active = true;
 }
 
 /* Fast position — step 1: set params once (func 0xF1) */

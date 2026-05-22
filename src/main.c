@@ -130,7 +130,7 @@ int main(void)
 
   // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
 
-  // CAN RX highest â€” motor data must never be delayed
+  // CAN RX highest â€? motor data must never be delayed
   HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
 
   // DMA (UART TX complete) just below CAN
@@ -139,7 +139,7 @@ int main(void)
   // USART1 below DMA
   HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
 
-  // TIM7 (servo PWM) lowest â€” jitter here is fine
+  // TIM7 (servo PWM) lowest â€? jitter here is fine
   HAL_NVIC_SetPriority(TIM7_IRQn, 3, 0);
 
   En_Control(TOP_LEFT_MOTOR, true, false);
@@ -151,7 +151,7 @@ int main(void)
   En_Control(BACK_RIGHT_MOTOR, true, false);
   HAL_Delay(1);
 
-  Send_Velocities(0, 0, 0, 0);
+  // Send_Velocities(0, 0, 0, 0);
   HAL_Delay(100);
   // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */
@@ -161,6 +161,7 @@ int main(void)
 
   while (1)
   {
+    MotorPosition_Task();
     MotorVelocity_Task();
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)

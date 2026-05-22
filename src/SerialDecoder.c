@@ -72,8 +72,7 @@ void handleSerialData(uint8_t byte)
     if (computed != received)
     {
         // Bad checksum — discard packet and re-sync
-        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n",
-               computed, received);
+        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n");
         bufIndex = 0;
         return;
     }
@@ -161,9 +160,9 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
-
         Serial_Send_Log("[PKT] Set_Horizontal_Arm_Position: %u\n", position);
+
+        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, (uint32_t)position, true, false);
         break;
     }
 
@@ -193,7 +192,7 @@ void handlePacket(void)
         Send_Velocities(vfl, vfr, vrl, vrr);
 
         Serial_Send_Log("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n",
-               vfl, vfr, vrl, vrr);
+                        vfl, vfr, vrl, vrr);
         break;
     }
 
