@@ -103,23 +103,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
         if (addr == VER_MOTOR)
         {
             /* Map revolutions to 0..10000 range: 1 rev -> 1000 units (clamped) */
-            float revs = (float)can.motor[idx].pulses / (float)PULSES_PER_REV;
-            int32_t scaled = (int32_t)(revs * 1000.0f);
+            int32_t scaled = can.motor[idx].pulses;
             if (scaled < 0)
                 scaled = -scaled;
-            if (scaled > 10000)
-                scaled = 10000;
             Serial_Send_VerticalArmPosition((uint16_t)scaled);
             can.motor[idx].pos_updated = false; /* consumed */
         }
         else if (addr == HOR_MOTOR)
         {
-            float revs = (float)can.motor[idx].pulses / (float)PULSES_PER_REV;
-            int32_t scaled = (int32_t)(revs * 1000.0f);
+            int32_t scaled = can.motor[idx].pulses;
             if (scaled < 0)
                 scaled = -scaled;
-            if (scaled > 10000)
-                scaled = 10000;
             Serial_Send_HorizontalArmPosition((uint16_t)scaled);
             can.motor[idx].pos_updated = false; /* consumed */
         }
