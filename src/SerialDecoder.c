@@ -135,7 +135,7 @@ void handlePacket(void)
         ssd1306_SetCursor(10, 15);
         ssd1306_WriteString(text, Font_16x26, White);
         ssd1306_UpdateScreen();
-        Serial_Send_Log("[PKT] Set_Display_Text: \"%s\"\n", text);
+        Serial_Send_Log("[PKT] Set_Display_Text: \"%s\"\n");
         break;
     }
 
@@ -147,9 +147,9 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
+        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 2000, 0, (uint32_t) position, true, false);
 
-        Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n", position);
+        Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n");
         break;
     }
 
@@ -161,7 +161,7 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, position, true, false);
+        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 150, 0, (uint32_t) position, true, false);
 
         Serial_Send_Log("[PKT] Set_Horizontal_Arm_Position: %u\n", position);
         break;

@@ -165,11 +165,10 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
 }
 
 void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float revs, bool raF, bool snF)
+                 uint32_t clk, bool raF, bool snF)
 {
     uint8_t cmd[16] = {0};
 
-    uint32_t clk = (uint32_t)(revs * PULSES_PER_REV);
     cmd[0] = addr;
     cmd[1] = 0xFD;
     cmd[2] = dir;

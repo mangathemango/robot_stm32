@@ -168,6 +168,7 @@ void can_SendCmd(volatile uint8_t *cmd, uint8_t len)
 
         while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
         {
+            return;
         }
         HAL_CAN_AddTxMessage(&hcan, &txHeader, txData, &txMailbox);
 
