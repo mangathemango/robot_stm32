@@ -41,18 +41,7 @@ void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint16_t time)
 
 void PwmServo_Handle(void)
 {
-    msTickCount++;
-    if(msTickCount >= 100)
-    {
-        msTickCount = 0;
-        for(int i = 0; i < 4; i++)
-        {
-            if(servoTimer[i] > 0)
-            {
-                servoTimer[i]--;
-            }
-        }
-    }
+
 
     pwmCount++;
 
@@ -60,19 +49,19 @@ void PwmServo_Handle(void)
         pwmCount = 0;
 
     // Servo 1
-    if(pwmCount < servoPulse[0] && servoTimer[0] > 0)
+    if(pwmCount < servoPulse[0])
         SERVO1_HIGH();
     else
         SERVO1_LOW();
 
     // Servo 2
-    if(pwmCount < servoPulse[1] && servoTimer[1] > 0)
+    if(pwmCount < servoPulse[1])
         SERVO2_HIGH();
     else
         SERVO2_LOW();
 
     // Servo 3
-    if(pwmCount < servoPulse[2] && servoTimer[2] > 0)
+    if(pwmCount < servoPulse[2])
         SERVO3_HIGH();
     else
         SERVO3_LOW();
