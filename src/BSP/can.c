@@ -6,6 +6,8 @@
  *  Driver state instance
  * --------------------------------------------------------------- */
 volatile CAN_t can = {0};
+volatile WheelVelSnapshot_t wheelVelSnap = {0};
+volatile ArmPosSnapshot_t armPosSnap = {0};
 
 /* ---------------------------------------------------------------
  *  CAN_Start
@@ -74,18 +76,21 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
     if (funcCode == 0x35 && can.rxFrame.header.DLC >= 4)
     {
         uint16_t raw = ((uint16_t)can.rxFrame.data[2] << 8) | (uint16_t)can.rxFrame.data[3];
-
         can.motor[idx].rpm = (sign == 0x01) ? -(int16_t)raw : (int16_t)raw;
         can.motor[idx].vel_updated = true;
-        /* If all four wheel motors have fresh velocity data, send them over serial */
-        if (can.motor[TOP_LEFT_MOTOR - 1].vel_updated && can.motor[TOP_RIGHT_MOTOR - 1].vel_updated &&
-            can.motor[BACK_LEFT_MOTOR - 1].vel_updated && can.motor[BACK_RIGHT_MOTOR - 1].vel_updated)
+
+        if (can.motor[TOP_LEFT_MOTOR - 1].vel_updated &&
+            can.motor[TOP_RIGHT_MOTOR - 1].vel_updated &&
+            can.motor[BACK_LEFT_MOTOR - 1].vel_updated &&
+            can.motor[BACK_RIGHT_MOTOR - 1].vel_updated)
         {
-            Serial_Send_WheelVelocities((int16_t)can.motor[TOP_LEFT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[TOP_RIGHT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[BACK_LEFT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[BACK_RIGHT_MOTOR - 1].rpm);
-            /* clear the flags so next update will be sent once all four arrive again */
+            /* Snapshot into a plain struct — no serial call here */
+            wheelVelSnap.vfl = can.motor[TOP_LEFT_MOTOR - 1].rpm;
+            wheelVelSnap.vfr = can.motor[TOP_RIGHT_MOTOR - 1].rpm;
+            wheelVelSnap.vrl = can.motor[BACK_LEFT_MOTOR - 1].rpm;
+            wheelVelSnap.vrr = can.motor[BACK_RIGHT_MOTOR - 1].rpm;
+            wheelVelSnap.ready = true; /* main loop sees this and sends */
+
             can.motor[TOP_LEFT_MOTOR - 1].vel_updated = false;
             can.motor[TOP_RIGHT_MOTOR - 1].vel_updated = false;
             can.motor[BACK_LEFT_MOTOR - 1].vel_updated = false;
@@ -95,11 +100,21 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
 
     else if (funcCode == 0x32 && can.rxFrame.header.DLC >= 6)
     {
-        uint32_t raw = ((uint32_t)can.rxFrame.data[2] << 24) | ((uint32_t)can.rxFrame.data[3] << 16) | ((uint32_t)can.rxFrame.data[4] << 8) | (uint32_t)can.rxFrame.data[5];
+        uint32_t raw = ((uint32_t)can.rxFrame.data[2] << 24) |
+                       ((uint32_t)can.rxFrame.data[3] << 16) |
+                       ((uint32_t)can.rxFrame.data[4] << 8) |
+                       (uint32_t)can.rxFrame.data[5];
 
         can.motor[idx].pulses = (sign == 0x01) ? -(int32_t)raw : (int32_t)raw;
         can.motor[idx].pos_updated = true;
-        /* If this is the vertical or horizontal arm motor, send a scaled position packet */
+
+        float revs = (float)can.motor[idx].pulses / (float)PULSES_PER_REV;
+        int32_t scaled = (int32_t)(revs * 1000.0f);
+        if (scaled < 0)
+            scaled = -scaled;
+        if (scaled > 10000)
+            scaled = 10000;
+
         if (addr == VER_MOTOR)
         {
             /* Map revolutions to 0..10000 range: 1 rev -> 1000 units (clamped) */
@@ -118,6 +133,27 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
             can.motor[idx].pos_updated = false; /* consumed */
         }
     }
+}
+
+bool CAN_TakeWheelVelocitySnapshot(int16_t *vfl, int16_t *vfr, int16_t *vrl, int16_t *vrr)
+{
+    if (!wheelVelSnap.ready)
+        return false;
+
+    __disable_irq();
+    if (!wheelVelSnap.ready)
+    {
+        __enable_irq();
+        return false;
+    }
+
+    *vfl = wheelVelSnap.vfl;
+    *vfr = wheelVelSnap.vfr;
+    *vrl = wheelVelSnap.vrl;
+    *vrr = wheelVelSnap.vrr;
+    wheelVelSnap.ready = false;
+    __enable_irq();
+    return true;
 }
 
 /* ---------------------------------------------------------------

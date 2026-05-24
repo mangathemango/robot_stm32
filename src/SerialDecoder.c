@@ -138,8 +138,8 @@ void handlePacket(void)
         break;
     }
 
-    // ── 0x06  Set_Vertical_Arm_Position ──────────────────────────────────
-    // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
+        // ── 0x06  Set_Vertical_Arm_Position ──────────────────────────────────
+        // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
     case CMD_SET_VERTICAL_ARM_POSITION:
     {
         if (len != 0x02)
@@ -151,9 +151,8 @@ void handlePacket(void)
         Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n");
         break;
     }
-
-    // ── 0x07  Set_Horizontal_Arm_Position ────────────────────────────────
-    // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
+        // ── 0x07  Set_Horizontal_Arm_Position ────────────────────────────────
+        // LEN = 0x02  |  data[0..1] = Position (0-10000, uint16 little-endian)
     case CMD_SET_HORIZONTAL_ARM_POSITION:
     {
         if (len != 0x02)

@@ -69,6 +69,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_CAN_Init(void);
 static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
+static void DrainSerialQueue(void);
 
 /* USER CODE END PFP */
 
@@ -77,14 +78,13 @@ static void MX_I2C2_Init(void);
 static void PollMotorTelemetry(void)
 {
   /* Request each motor's current state; CAN RX callback forwards the reply to UART. */
-  (void)CAN_ReadVelocity(TOP_LEFT_MOTOR, 10);
-  (void)CAN_ReadVelocity(TOP_RIGHT_MOTOR, 10);
-  (void)CAN_ReadVelocity(BACK_LEFT_MOTOR, 10);
-  (void)CAN_ReadVelocity(BACK_RIGHT_MOTOR, 10);
-  (void)CAN_ReadRevs(VER_MOTOR, 10);
-  (void)CAN_ReadRevs(HOR_MOTOR, 10);
+  Read_Sys_Params(TOP_LEFT_MOTOR, S_VEL);
+  Read_Sys_Params(TOP_RIGHT_MOTOR, S_VEL);
+  Read_Sys_Params(BACK_LEFT_MOTOR, S_VEL);
+  Read_Sys_Params(BACK_RIGHT_MOTOR, S_VEL);
+  Read_Sys_Params(VER_MOTOR, S_PULSES);
+  Read_Sys_Params(HOR_MOTOR, S_PULSES);
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -156,12 +156,16 @@ int main(void)
   // Safely copy into a local null-terminated buffer for string ops
   /* USER CODE END 2 */
 
-  static uint8_t key1_prev = 1;
   uint32_t next_telemetry_ms = HAL_GetTick();
 
+
+  static uint8_t key1_prev = 1;
+  static uint8_t key2_prev = 1;
+  static uint8_t key3_prev = 1;
   while (1)
   {
     MotorVelocity_Task();
+    DrainSerialQueue(); /* <-- add this */
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
     {
@@ -175,7 +179,21 @@ int main(void)
       Beep_Start(100);
       Serial_Send_Key1();
     }
+    uint8_t key2_now = HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin);
+    if (key2_prev == 1 && key2_now == 0)
+    {
+      Beep_Start(100);
+      Serial_Send_Key1();
+    }
+    uint8_t key3_now = HAL_GPIO_ReadPin(KEY3_GPIO_Port, KEY3_Pin);
+    if (key3_prev == 1 && key3_now == 0)
+    {
+      Beep_Start(100);
+      Serial_Send_Key1();
+    }
     key1_prev = key1_now;
+    key2_prev = key2_now;
+    key3_prev = key3_now;
     Beep_Update();
   }
 }
@@ -389,10 +407,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /* Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LED_Pin | SERVO_1_Pin | SERVO_2_Pin | BEEP_Pin, GPIO_PIN_RESET);
 
   /* Configure GPIO pins: LED_Pin SERVO_1_Pin SERVO_3_Pin SERVO_4_Pin BEEP_Pin */
-  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_2_Pin | SERVO_3_Pin | BEEP_Pin;
+  GPIO_InitStruct.Pin = LED_Pin | SERVO_1_Pin | SERVO_2_Pin | BEEP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -414,6 +432,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(KEY2_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = KEY3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(KEY3_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -444,6 +467,47 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     PwmServo_Handle();
   }
+}
+
+static void DrainSerialQueue(void)
+{
+  int16_t vfl, vfr, vrl, vrr;
+  if (CAN_TakeWheelVelocitySnapshot(&vfl, &vfr, &vrl, &vrr))
+    Serial_Send_WheelVelocities(vfl, vfr, vrl, vrr);
+
+  /* Arm positions �� same atomic copy pattern */
+  if (armPosSnap.ver_ready)
+  {
+    __disable_irq();
+    int32_t pulses = armPosSnap.ver_pulses;
+    armPosSnap.ver_ready = false;
+    __enable_irq();
+
+    float revs = (float)pulses / (float)PULSES_PER_REV;
+    int32_t scaled = (int32_t)(revs * 1000.0f);
+    if (scaled < 0)
+      scaled = -scaled;
+    if (scaled > 10000)
+      scaled = 10000;
+    Serial_Send_VerticalArmPosition((uint16_t)scaled);
+  }
+  // same pattern for hor
+  if (armPosSnap.hor_ready)
+  {
+    __disable_irq();
+    int32_t pulses = armPosSnap.hor_pulses;
+    armPosSnap.hor_ready = false;
+    __enable_irq();
+
+    float revs = (float)pulses / (float)PULSES_PER_REV;
+    int32_t scaled = (int32_t)(revs * 1000.0f);
+    if (scaled < 0)
+      scaled = -scaled;
+    if (scaled > 10000)
+      scaled = 10000;
+    Serial_Send_HorizontalArmPosition((uint16_t)scaled);
+  }
+  // same pattern for hor
 }
 
 #ifdef USE_FULL_ASSERT

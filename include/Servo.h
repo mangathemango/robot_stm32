@@ -13,9 +13,6 @@
 #define SERVO2_HIGH() HAL_GPIO_WritePin(SERVO_2_GPIO_Port, SERVO_2_Pin, GPIO_PIN_SET)
 #define SERVO2_LOW()  HAL_GPIO_WritePin(SERVO_2_GPIO_Port, SERVO_2_Pin, GPIO_PIN_RESET)
 
-#define SERVO3_HIGH() HAL_GPIO_WritePin(SERVO_3_GPIO_Port, SERVO_3_Pin, GPIO_PIN_SET)
-#define SERVO3_LOW()  HAL_GPIO_WritePin(SERVO_3_GPIO_Port, SERVO_3_Pin, GPIO_PIN_RESET)
-
 // Function declarations
 void PwmServo_Init(void);
 void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time);
