@@ -433,7 +433,7 @@ static void SendSingleWheelVelocity(uint8_t motorAddr, int16_t targetVelocity)
 
 static void SendSingleWheelVelocity_Dir(uint8_t motorAddr, int16_t targetVelocity, uint8_t dir)
 {
-    Vel_Control(motorAddr, dir ? MOTOR_DIR_CCW : MOTOR_DIR_CW, (uint16_t)ABS(targetVelocity), 0, false);
+    Vel_Control(motorAddr, dir ? MOTOR_DIR_CCW : MOTOR_DIR_CW, (uint16_t)ABS(targetVelocity), 200, false);
 }
 
 void MotorVelocity_Task(void)
