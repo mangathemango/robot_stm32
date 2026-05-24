@@ -1,5 +1,6 @@
 #include "can.h"
 #include "EmmV5.h"
+#include "SerialEncoder.h"
 
 /* ---------------------------------------------------------------
  *  Driver state instance
@@ -76,6 +77,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
 
         can.motor[idx].rpm = (sign == 0x01) ? -(int16_t)raw : (int16_t)raw;
         can.motor[idx].vel_updated = true;
+        /* If all four wheel motors have fresh velocity data, send them over serial */
+        if (can.motor[TOP_LEFT_MOTOR - 1].vel_updated && can.motor[TOP_RIGHT_MOTOR - 1].vel_updated &&
+            can.motor[BACK_LEFT_MOTOR - 1].vel_updated && can.motor[BACK_RIGHT_MOTOR - 1].vel_updated)
+        {
+            Serial_Send_WheelVelocities((int16_t)can.motor[TOP_LEFT_MOTOR - 1].rpm,
+                                        (int16_t)can.motor[TOP_RIGHT_MOTOR - 1].rpm,
+                                        (int16_t)can.motor[BACK_LEFT_MOTOR - 1].rpm,
+                                        (int16_t)can.motor[BACK_RIGHT_MOTOR - 1].rpm);
+            /* clear the flags so next update will be sent once all four arrive again */
+            can.motor[TOP_LEFT_MOTOR - 1].vel_updated = false;
+            can.motor[TOP_RIGHT_MOTOR - 1].vel_updated = false;
+            can.motor[BACK_LEFT_MOTOR - 1].vel_updated = false;
+            can.motor[BACK_RIGHT_MOTOR - 1].vel_updated = false;
+        }
     }
 
     else if (funcCode == 0x32 && can.rxFrame.header.DLC >= 6)
@@ -84,6 +99,24 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
 
         can.motor[idx].pulses = (sign == 0x01) ? -(int32_t)raw : (int32_t)raw;
         can.motor[idx].pos_updated = true;
+        /* If this is the vertical or horizontal arm motor, send a scaled position packet */
+        if (addr == VER_MOTOR)
+        {
+            /* Map revolutions to 0..10000 range: 1 rev -> 1000 units (clamped) */
+            int32_t scaled = can.motor[idx].pulses;
+            if (scaled < 0)
+                scaled = -scaled;
+            Serial_Send_VerticalArmPosition((uint16_t)scaled);
+            can.motor[idx].pos_updated = false; /* consumed */
+        }
+        else if (addr == HOR_MOTOR)
+        {
+            int32_t scaled = can.motor[idx].pulses;
+            if (scaled < 0)
+                scaled = -scaled;
+            Serial_Send_HorizontalArmPosition((uint16_t)scaled);
+            can.motor[idx].pos_updated = false; /* consumed */
+        }
     }
 }
 
@@ -129,6 +162,7 @@ void can_SendCmd(volatile uint8_t *cmd, uint8_t len)
 
         while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
         {
+            return;
         }
         HAL_CAN_AddTxMessage(&hcan, &txHeader, txData, &txMailbox);
 
@@ -164,20 +198,21 @@ int16_t CAN_ReadVelocity(uint8_t addr, uint32_t timeout_ms)
  *  Same unit as the 'clk' param in Emm_V5_Pos_Control()
  *  Returns INT32_MIN on timeout
  * --------------------------------------------------------------- */
-int32_t CAN_ReadPulses(uint8_t addr, uint32_t timeout_ms)
+float CAN_ReadRevs(uint8_t addr, uint32_t timeout_ms)
 {
     if (addr < 1 || addr > MAX_MOTORS)
-        return INT32_MIN;
+        return -99999.0f;
     uint8_t idx = addr - 1;
 
     can.motor[idx].pos_updated = false;
-    Read_Sys_Params(addr, S_PULSES); // sends function code 0x32
+    Read_Sys_Params(addr, S_PULSES);
 
     uint32_t start = HAL_GetTick();
     while (!can.motor[idx].pos_updated)
     {
         if ((HAL_GetTick() - start) >= timeout_ms)
-            return INT32_MIN;
+            return -99999.0f;
     }
-    return can.motor[idx].pulses;
+
+    return (float)can.motor[idx].pulses / PULSES_PER_REV;
 }

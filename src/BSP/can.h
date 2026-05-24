@@ -61,6 +61,6 @@ int16_t CAN_ReadVelocity(uint8_t addr, uint32_t timeout_ms);
  *         This matches the 'clk' unit used in Emm_V5_Pos_Control().
  *         Returns INT32_MIN on timeout.
  */
-int32_t CAN_ReadPulses(uint8_t addr, uint32_t timeout_ms);
+float CAN_ReadRevs(uint8_t addr, uint32_t timeout_ms);
 
 #endif /* __CAN_H */

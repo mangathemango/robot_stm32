@@ -165,11 +165,10 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
 }
 
 void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float revs, bool raF, bool snF)
+                 uint32_t clk, bool raF, bool snF)
 {
     uint8_t cmd[16] = {0};
 
-    uint32_t clk = (uint32_t)(revs * PULSES_PER_REV);
     cmd[0] = addr;
     cmd[1] = 0xFD;
     cmd[2] = dir;
@@ -183,6 +182,7 @@ void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
     cmd[10] = (uint8_t)raF;
     cmd[11] = (uint8_t)snF;
     cmd[12] = 0x6B;
+
     can_SendCmd(cmd, 13); // auto-split: packet0 (8B) + packet1 (5B)
 }
 
@@ -381,4 +381,135 @@ void Set_MotorID(uint8_t addr, bool svF, uint8_t new_id)
 {
     uint8_t cmd[6] = {addr, 0xAE, 0x4B, (uint8_t)svF, new_id, 0x6B};
     can_SendCmd(cmd, 6);
+}
+
+/* ================================================================
+ *  Non-blocking wheel velocity dispatch
+ * ================================================================ */
+typedef struct
+{
+    int16_t vfl;
+    int16_t vfr;
+    int16_t vrl;
+    int16_t vrr;
+    uint8_t dirfl;
+    uint8_t dirfr;
+    uint8_t dirrl;
+    uint8_t dirrr;
+    uint8_t step;
+    uint32_t next_due_ms;
+    bool active;
+    bool use_dirs;
+} WheelVelocityQueue_t;
+
+static volatile WheelVelocityQueue_t wheelQueue = {0};
+static const uint32_t wheelVelocityGapMs = 1U;
+
+/* Default motor directions (permanent, hardware orientation)
+ * Index: addr-1. For omniwheels we preset which way 'positive' maps.
+ * TOP_LEFT  = CW, TOP_RIGHT = CW, BACK_LEFT = CCW, BACK_RIGHT = CCW
+ */
+static const uint8_t motorDefaultDir[MAX_MOTORS] = {
+    MOTOR_DIR_CCW, /* addr 0x01 TOP_LEFT_MOTOR */
+    MOTOR_DIR_CW,  /* addr 0x02 TOP_RIGHT_MOTOR */
+    MOTOR_DIR_CCW, /* addr 0x03 BACK_LEFT_MOTOR */
+    MOTOR_DIR_CW,  /* addr 0x04 BACK_RIGHT_MOTOR */
+    MOTOR_DIR_CW,  /* addr 0x05 VER_MOTOR (default) */
+    MOTOR_DIR_CW   /* addr 0x06 HOR_MOTOR (default) */
+};
+
+static void SendSingleWheelVelocity(uint8_t motorAddr, int16_t targetVelocity)
+{
+    /* Use the pre-set default direction for this motor and flip when velocity is negative */
+    uint8_t idx = (motorAddr > 0) ? (motorAddr - 1) : 0;
+    uint8_t base_dir = MOTOR_DIR_CW;
+    if (idx < MAX_MOTORS)
+        base_dir = motorDefaultDir[idx];
+
+    uint8_t dir = (targetVelocity < 0) ? (base_dir ^ 1) : base_dir;
+    uint16_t mag = (uint16_t)ABS(targetVelocity);
+    Vel_Control(motorAddr, dir, mag, 0, false);
+}
+
+static void SendSingleWheelVelocity_Dir(uint8_t motorAddr, int16_t targetVelocity, uint8_t dir)
+{
+    Vel_Control(motorAddr, dir ? MOTOR_DIR_CCW : MOTOR_DIR_CW, (uint16_t)ABS(targetVelocity), 0, false);
+}
+
+void MotorVelocity_Task(void)
+{
+    if (!wheelQueue.active)
+        return;
+
+    uint32_t now = HAL_GetTick();
+    if ((int32_t)(now - wheelQueue.next_due_ms) < 0)
+        return;
+
+    switch (wheelQueue.step)
+    {
+    case 0:
+        if (wheelQueue.use_dirs)
+            SendSingleWheelVelocity_Dir(TOP_LEFT_MOTOR, wheelQueue.vfl, wheelQueue.dirfl);
+        else
+            SendSingleWheelVelocity(TOP_LEFT_MOTOR, wheelQueue.vfl);
+        break;
+    case 1:
+        if (wheelQueue.use_dirs)
+            SendSingleWheelVelocity_Dir(TOP_RIGHT_MOTOR, wheelQueue.vfr, wheelQueue.dirfr);
+        else
+            SendSingleWheelVelocity(TOP_RIGHT_MOTOR, wheelQueue.vfr);
+        break;
+    case 2:
+        if (wheelQueue.use_dirs)
+            SendSingleWheelVelocity_Dir(BACK_LEFT_MOTOR, wheelQueue.vrl, wheelQueue.dirrl);
+        else
+            SendSingleWheelVelocity(BACK_LEFT_MOTOR, wheelQueue.vrl);
+        break;
+    case 3:
+        if (wheelQueue.use_dirs)
+            SendSingleWheelVelocity_Dir(BACK_RIGHT_MOTOR, wheelQueue.vrr, wheelQueue.dirrr);
+        else
+            SendSingleWheelVelocity(BACK_RIGHT_MOTOR, wheelQueue.vrr);
+        break;
+    default:
+        wheelQueue.active = false;
+        return;
+    }
+
+    wheelQueue.step++;
+    wheelQueue.next_due_ms = now + wheelVelocityGapMs;
+
+    if (wheelQueue.step >= 4)
+        wheelQueue.active = false;
+}
+
+void Send_Velocities(int16_t vfl, int16_t vfr, int16_t vrl, int16_t vrr)
+{
+    wheelQueue.vfl = vfl;
+    wheelQueue.vfr = vfr;
+    wheelQueue.vrl = vrl;
+    wheelQueue.vrr = vrr;
+    wheelQueue.use_dirs = false;
+    wheelQueue.step = 0;
+    wheelQueue.next_due_ms = HAL_GetTick();
+    wheelQueue.active = true;
+}
+
+void Send_Velocities_WithDirs(int16_t vfl, uint8_t dirfl,
+                              int16_t vfr, uint8_t dirfr,
+                              int16_t vrl, uint8_t dirrl,
+                              int16_t vrr, uint8_t dirrr)
+{
+    wheelQueue.vfl = vfl;
+    wheelQueue.vfr = vfr;
+    wheelQueue.vrl = vrl;
+    wheelQueue.vrr = vrr;
+    wheelQueue.dirfl = dirfl;
+    wheelQueue.dirfr = dirfr;
+    wheelQueue.dirrl = dirrl;
+    wheelQueue.dirrr = dirrr;
+    wheelQueue.use_dirs = true;
+    wheelQueue.step = 0;
+    wheelQueue.next_due_ms = HAL_GetTick();
+    wheelQueue.active = true;
 }
