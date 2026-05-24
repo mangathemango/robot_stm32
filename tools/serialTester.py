@@ -183,9 +183,6 @@ def main():
 
     print("Connected!\n")
 
-    t = threading.Thread(target=receive_loop, args=(ser,), daemon=True)
-    t.start()
-
     try:
         while True:
             print_menu()

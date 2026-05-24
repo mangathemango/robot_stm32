@@ -72,8 +72,7 @@ void handleSerialData(uint8_t byte)
     if (computed != received)
     {
         // Bad checksum — discard packet and re-sync
-        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n",
-                        computed, received);
+        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n");
         bufIndex = 0;
         return;
     }
@@ -106,7 +105,7 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Yaw_Servo_Angle(angle);
         PwmServo_Set_Angle(YAW_SERVO, angle, DEFAULT_TIME);
-        Serial_Send_Log("[PKT] Set_Yaw_Servo_Angle: %u\n", angle);
+        Serial_Send_Log("[PKT] Set_Yaw_Servo_Angle: %u\n");
         break;
     }
 
@@ -119,7 +118,7 @@ void handlePacket(void)
         uint8_t angle = data[0]; // 0–180
         // TODO: Set_Claw_Servo_Angle(angle);
         PwmServo_Set_Angle(CLAW_SERVO, angle, DEFAULT_TIME);
-        Serial_Send_Log("[PKT] Set_Claw_Servo_Angle: %u\n", angle);
+        Serial_Send_Log("[PKT] Set_Claw_Servo_Angle: %u\n");
         break;
     }
 
@@ -135,7 +134,7 @@ void handlePacket(void)
         ssd1306_SetCursor(10, 15);
         ssd1306_WriteString(text, Font_16x26, White);
         ssd1306_UpdateScreen();
-        Serial_Send_Log("[PKT] Set_Display_Text: \"%s\"\n", text);
+        Serial_Send_Log("[PKT] Set_Display_Text: \"%s\"\n");
         break;
     }
 
@@ -145,9 +144,11 @@ void handlePacket(void)
     {
         if (len != 0x02)
             break;
-        uint16_t position = (uint16_t)(data[0] | (data[1] << 8));
-        float revs = (float)position / 1000.0f; // undo the *1000 scaling
-        Pos_Control(VER_MOTOR, MOTOR_DIR_CCW, 1000, 50, revs, true, false);
+        uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
+
+        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 2000, 0, (uint32_t) position, true, false);
+
+        Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n");
         break;
     }
         // ── 0x07  Set_Horizontal_Arm_Position ────────────────────────────────
@@ -156,9 +157,11 @@ void handlePacket(void)
     {
         if (len != 0x02)
             break;
-        uint16_t position = (uint16_t)(data[0] | (data[1] << 8));
-        float revs = (float)position / 1000.0f;
-        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 1000, 50, revs, true, false);
+        uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
+
+        Pos_Control(HOR_MOTOR, MOTOR_DIR_CCW, 150, 0, (uint32_t) position, true, false);
+
+        Serial_Send_Log("[PKT] Set_Horizontal_Arm_Position: %u\n");
         break;
     }
 
@@ -187,13 +190,12 @@ void handlePacket(void)
 
         Send_Velocities(vfl, vfr, vrl, vrr);
 
-        Serial_Send_Log("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n",
-                        vfl, vfr, vrl, vrr);
+        Serial_Send_Log("[PKT] Set_Wheel_Target_Velocities: vfl=%d vfr=%d vrl=%d vrr=%d\n");
         break;
     }
 
     default:
-        Serial_Send_Log("[SerialDecoder] Unknown command ID: 0x%02X\n", id);
+        Serial_Send_Log("[SerialDecoder] Unknown command ID: 0x%02X\n");
         break;
     }
 }

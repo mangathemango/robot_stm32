@@ -165,11 +165,10 @@ void Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
 }
 
 void Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc,
-                 float revs, bool raF, bool snF)
+                 uint32_t clk, bool raF, bool snF)
 {
     uint8_t cmd[16] = {0};
 
-    uint32_t clk = (uint32_t)(revs * PULSES_PER_REV);
     cmd[0] = addr;
     cmd[1] = 0xFD;
     cmd[2] = dir;
@@ -429,12 +428,12 @@ static void SendSingleWheelVelocity(uint8_t motorAddr, int16_t targetVelocity)
 
     uint8_t dir = (targetVelocity < 0) ? (base_dir ^ 1) : base_dir;
     uint16_t mag = (uint16_t)ABS(targetVelocity);
-    Vel_Control(motorAddr, dir, mag, 0, false);
+    Vel_Control(motorAddr, dir, mag, 200, false);
 }
 
 static void SendSingleWheelVelocity_Dir(uint8_t motorAddr, int16_t targetVelocity, uint8_t dir)
 {
-    Vel_Control(motorAddr, dir ? MOTOR_DIR_CCW : MOTOR_DIR_CW, (uint16_t)ABS(targetVelocity), 0, false);
+    Vel_Control(motorAddr, dir ? MOTOR_DIR_CCW : MOTOR_DIR_CW, (uint16_t)ABS(targetVelocity), 200, false);
 }
 
 void MotorVelocity_Task(void)

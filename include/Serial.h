@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 /* Set to 1 to use DMA for transmission, 0 for blocking */
-#define ENABLE_UART_DMA 1
+#define ENABLE_UART_DMA 0
 
 /* Exposed so the ISR callback in bsp_uart.c can use it */
 extern uint8_t RxTemp;

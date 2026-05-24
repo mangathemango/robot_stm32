@@ -117,15 +117,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
 
         if (addr == VER_MOTOR)
         {
-            armPosSnap.ver_pulses = can.motor[idx].pulses; // store raw int32
-            armPosSnap.ver_ready = true;
-            can.motor[idx].pos_updated = false;
+            /* Map revolutions to 0..10000 range: 1 rev -> 1000 units (clamped) */
+            int32_t scaled = can.motor[idx].pulses;
+            if (scaled < 0)
+                scaled = -scaled;
+            Serial_Send_VerticalArmPosition((uint16_t)scaled);
+            can.motor[idx].pos_updated = false; /* consumed */
         }
         else if (addr == HOR_MOTOR)
         {
-            armPosSnap.hor_pulses = can.motor[idx].pulses;
-            armPosSnap.hor_ready = true;
-            can.motor[idx].pos_updated = false;
+            int32_t scaled = can.motor[idx].pulses;
+            if (scaled < 0)
+                scaled = -scaled;
+            Serial_Send_HorizontalArmPosition((uint16_t)scaled);
+            can.motor[idx].pos_updated = false; /* consumed */
         }
     }
 }
@@ -193,6 +198,7 @@ void can_SendCmd(volatile uint8_t *cmd, uint8_t len)
 
         while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
         {
+            return;
         }
         HAL_CAN_AddTxMessage(&hcan, &txHeader, txData, &txMailbox);
 
