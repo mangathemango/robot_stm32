@@ -63,24 +63,4 @@ int16_t CAN_ReadVelocity(uint8_t addr, uint32_t timeout_ms);
  */
 float CAN_ReadRevs(uint8_t addr, uint32_t timeout_ms);
 
-typedef struct
-{
-    int16_t vfl, vfr, vrl, vrr;
-    bool ready;
-} WheelVelSnapshot_t;
-
-extern volatile WheelVelSnapshot_t wheelVelSnap;
-
-typedef struct
-{
-    int32_t ver_pulses;
-    int32_t hor_pulses;
-    bool ver_ready;
-    bool hor_ready;
-} ArmPosSnapshot_t;
-
-extern volatile ArmPosSnapshot_t armPosSnap;
-
-bool CAN_TakeWheelVelocitySnapshot(int16_t *vfl, int16_t *vfr, int16_t *vrl, int16_t *vrr);
-
 #endif /* __CAN_H */

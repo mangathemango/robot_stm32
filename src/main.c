@@ -69,7 +69,6 @@ static void MX_USART1_UART_Init(void);
 static void MX_CAN_Init(void);
 static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
-static void DrainSerialQueue(void);
 
 /* USER CODE END PFP */
 
@@ -78,13 +77,14 @@ static void DrainSerialQueue(void);
 static void PollMotorTelemetry(void)
 {
   /* Request each motor's current state; CAN RX callback forwards the reply to UART. */
-  Read_Sys_Params(TOP_LEFT_MOTOR, S_VEL);
-  Read_Sys_Params(TOP_RIGHT_MOTOR, S_VEL);
-  Read_Sys_Params(BACK_LEFT_MOTOR, S_VEL);
-  Read_Sys_Params(BACK_RIGHT_MOTOR, S_VEL);
-  Read_Sys_Params(VER_MOTOR, S_PULSES);
-  Read_Sys_Params(HOR_MOTOR, S_PULSES);
+  (void)CAN_ReadVelocity(TOP_LEFT_MOTOR, 10);
+  (void)CAN_ReadVelocity(TOP_RIGHT_MOTOR, 10);
+  (void)CAN_ReadVelocity(BACK_LEFT_MOTOR, 10);
+  (void)CAN_ReadVelocity(BACK_RIGHT_MOTOR, 10);
+  (void)CAN_ReadRevs(VER_MOTOR, 10);
+  (void)CAN_ReadRevs(HOR_MOTOR, 10);
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -121,6 +121,12 @@ int main(void)
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   USART1_Init();
+  HAL_TIM_Base_Start_IT(&htim7);
+  PwmServo_Init();
+  ssd1306_Init();
+
+  /* USER CODE BEGIN 2 */
+  CAN_Start();
 
   HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
 
@@ -133,14 +139,6 @@ int main(void)
   // TIM7 (servo PWM) lowest — jitter here is fine
   HAL_NVIC_SetPriority(TIM7_IRQn, 3, 0);
 
-
-  HAL_TIM_Base_Start_IT(&htim7);
-  PwmServo_Init();
-  ssd1306_Init();
-
-  /* USER CODE BEGIN 2 */
-  CAN_Start();
-
   // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
 
   En_Control(TOP_LEFT_MOTOR, true, false);
@@ -152,6 +150,11 @@ int main(void)
   En_Control(BACK_RIGHT_MOTOR, true, false);
   HAL_Delay(1);
 
+  En_Control(VER_MOTOR, true, false);
+  HAL_Delay(1);
+  En_Control(HOR_MOTOR, true, false);
+  HAL_Delay(1);
+
   Send_Velocities(0, 0, 0, 0);
   HAL_Delay(100);
   // Safely copy into a local null-terminated buffer for string ops
@@ -159,14 +162,12 @@ int main(void)
 
   uint32_t next_telemetry_ms = HAL_GetTick();
 
-
   static uint8_t key1_prev = 1;
   static uint8_t key2_prev = 1;
   static uint8_t key3_prev = 1;
   while (1)
   {
     MotorVelocity_Task();
-    DrainSerialQueue(); /* <-- add this */
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
     {
@@ -468,47 +469,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     PwmServo_Handle();
   }
-}
-
-static void DrainSerialQueue(void)
-{
-  int16_t vfl, vfr, vrl, vrr;
-  if (CAN_TakeWheelVelocitySnapshot(&vfl, &vfr, &vrl, &vrr))
-    Serial_Send_WheelVelocities(vfl, vfr, vrl, vrr);
-
-  /* Arm positions �� same atomic copy pattern */
-  if (armPosSnap.ver_ready)
-  {
-    __disable_irq();
-    int32_t pulses = armPosSnap.ver_pulses;
-    armPosSnap.ver_ready = false;
-    __enable_irq();
-
-    float revs = (float)pulses / (float)PULSES_PER_REV;
-    int32_t scaled = (int32_t)(revs * 1000.0f);
-    if (scaled < 0)
-      scaled = -scaled;
-    if (scaled > 10000)
-      scaled = 10000;
-    Serial_Send_VerticalArmPosition((uint16_t)scaled);
-  }
-  // same pattern for hor
-  if (armPosSnap.hor_ready)
-  {
-    __disable_irq();
-    int32_t pulses = armPosSnap.hor_pulses;
-    armPosSnap.hor_ready = false;
-    __enable_irq();
-
-    float revs = (float)pulses / (float)PULSES_PER_REV;
-    int32_t scaled = (int32_t)(revs * 1000.0f);
-    if (scaled < 0)
-      scaled = -scaled;
-    if (scaled > 10000)
-      scaled = 10000;
-    Serial_Send_HorizontalArmPosition((uint16_t)scaled);
-  }
-  // same pattern for hor
 }
 
 #ifdef USE_FULL_ASSERT
