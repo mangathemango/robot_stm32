@@ -121,16 +121,7 @@ int main(void)
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   USART1_Init();
-  HAL_TIM_Base_Start_IT(&htim7);
-  PwmServo_Init();
-  ssd1306_Init();
 
-  /* USER CODE BEGIN 2 */
-  CAN_Start();
-
-  // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
-
-  // CAN RX highest — motor data must never be delayed
   HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 0, 0);
 
   // DMA (UART TX complete) just below CAN
@@ -141,6 +132,16 @@ int main(void)
 
   // TIM7 (servo PWM) lowest — jitter here is fine
   HAL_NVIC_SetPriority(TIM7_IRQn, 3, 0);
+
+
+  HAL_TIM_Base_Start_IT(&htim7);
+  PwmServo_Init();
+  ssd1306_Init();
+
+  /* USER CODE BEGIN 2 */
+  CAN_Start();
+
+  // In MX_DMA_Init or just after all MX_xxx_Init() calls in main:
 
   En_Control(TOP_LEFT_MOTOR, true, false);
   HAL_Delay(1);
