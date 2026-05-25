@@ -1,38 +1,39 @@
 #include "Servo.h"
 
-static uint16_t servoPulse[3];
+#define SERVO_FRAME_TICKS     2000u
+#define SERVO_MIN_PULSE_TICKS   50u
+#define SERVO_MAX_PULSE_TICKS  250u
+#define SERVO_DEFAULT_ANGLE     90u
+
+static uint16_t servoPulse[2];
 static uint16_t pwmCount = 0;
-static int16_t servoTimer[3]; //in ms
-static uint8_t msTickCount = 0;
 
-// Convert angle (0-180) to pulse width
-
-// 0 deg  -> 0.5ms
-// 180 deg -> 2.5ms
+// Convert angle (0-180) to pulse width in TIM7 ticks.
+// TIM7 ticks are 10us, so 50 ticks = 0.5ms and 250 ticks = 2.5ms.
 static uint16_t PwmServo_Angle_To_Pulse(uint8_t angle)
 {
-    return 50 + (angle * 200 / 180);
+    if (angle > 180)
+        angle = 180;
+
+    return SERVO_MIN_PULSE_TICKS +
+           (uint16_t)((uint32_t)angle * (SERVO_MAX_PULSE_TICKS - SERVO_MIN_PULSE_TICKS) / 180u);
 }
 
 void PwmServo_Init(void)
 {
-    // Start all servos at 90 degrees
-    PwmServo_Set_Angle_All(0, 0, 0, 100);
+    // Start both servos in the neutral position.
+    PwmServo_Set_Angle_All(SERVO_DEFAULT_ANGLE, SERVO_DEFAULT_ANGLE, DEFAULT_TIME);
 }
 
 void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time)
 {
-    if(index > 1)
+    if (index >= 2)
         return;
 
-    if(angle > 180)
-        angle = 180;
-
     servoPulse[index] = PwmServo_Angle_To_Pulse(angle);
-    // servoTimer[index] = time;
 }
 
-void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint16_t time)
+void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint16_t time)
 {
     PwmServo_Set_Angle(0, a1, time);
     PwmServo_Set_Angle(1, a2, time);
@@ -44,7 +45,7 @@ void PwmServo_Handle(void)
 
     pwmCount++;
 
-    if(pwmCount >= 2000)
+    if (pwmCount >= SERVO_FRAME_TICKS)
         pwmCount = 0;
 
     // Servo 1
