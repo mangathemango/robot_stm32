@@ -4,9 +4,9 @@
 #include "cmsis_gcc.h"   // for __disable_irq / __enable_irq
 #include "Beep.h"
 
-#define SERVO_FRAME_TICKS  1000u
-#define SERVO_MIN_TICKS      25u
-#define SERVO_MAX_TICKS     125u
+#define SERVO_FRAME_TICKS  2000u
+#define SERVO_MIN_TICKS      50u
+#define SERVO_MAX_TICKS     250u
 
 static volatile uint16_t servoPulse[2]      = {0, 0};
 static volatile uint16_t servoPulse_next[2] = {0, 0};
