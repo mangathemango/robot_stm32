@@ -1,24 +1,18 @@
-// Servo.c
+// Servo.c - fixed
+
 #include "Servo.h"
+#include "cmsis_gcc.h"   // for __disable_irq / __enable_irq
+#include "Beep.h"
 
-// TIM7: PSC=71 ARR=9 → 10us tick, 100kHz ISR
-// Frame = 2000 ticks = 20ms
-// Pulse range: 50 ticks (0.5ms) to 230 ticks (2.3ms) = 180 steps = 1 deg/step
-#define SERVO_FRAME_TICKS    2000u
-#define SERVO_MIN_TICKS        50u   // 0.5ms
-#define SERVO_MAX_TICKS       250u   // 2.3ms  (180 steps × 1 tick = 180 ticks range)
-#define SERVO_DEFAULT_ANGLE    90u
+#define SERVO_FRAME_TICKS  2000u
+#define SERVO_MIN_TICKS      50u
+#define SERVO_MAX_TICKS     250u
 
-// Shadow registers — written from main, swapped in at frame boundary (atomic swap)
-static volatile uint16_t servoPulse[2]       = {0, 0};
-static volatile uint16_t servoPulse_next[2]  = {0, 0};
-static volatile uint8_t  pulseUpdated        = 0;
+static volatile uint16_t servoPulse[2]      = {0, 0};
+static volatile uint16_t servoPulse_next[2] = {0, 0};
+static volatile uint8_t  pulseUpdated       = 0;
 
 static uint16_t pwmCount = 0;
-static int16_t servoTimer[3]; //in ms
-static uint8_t msTickCount = 0;
-
-// Convert angle (0-180) to pulse width
 
 static uint16_t PwmServo_Angle_To_Pulse(uint8_t angle)
 {
@@ -33,25 +27,35 @@ void PwmServo_Init(void)
     servoPulse[1] = servoPulse_next[1] = PwmServo_Angle_To_Pulse(160);
 }
 
-// Called from main — safe, uses shadow register
+// ── Write both shadow regs + flag in one critical section ──────────────────
+static inline void latch_next(uint16_t p0, uint16_t p1)
+{
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+        servoPulse_next[0] = p0;
+        servoPulse_next[1] = p1;
+        pulseUpdated        = 1;
+    __set_PRIMASK(primask);   // restore, not unconditional enable
+}
+
 void PwmServo_Set_Angle(uint8_t index, uint8_t angle, uint16_t time)
 {
     if (index >= 2) return;
-    servoPulse_next[index] = PwmServo_Angle_To_Pulse(angle);
-    pulseUpdated = 1;
+    // Read-modify: keep the other channel's current next value
+    uint16_t p[2] = { servoPulse_next[0], servoPulse_next[1] };
+    p[index] = PwmServo_Angle_To_Pulse(angle);
+    latch_next(p[0], p[1]);
 }
 
 void PwmServo_Set_Angle_All(uint8_t a1, uint8_t a2, uint8_t a3, uint16_t time)
 {
-    servoPulse_next[0] = PwmServo_Angle_To_Pulse(a1);
-    servoPulse_next[1] = PwmServo_Angle_To_Pulse(a2);
-    pulseUpdated = 1;
+    latch_next(PwmServo_Angle_To_Pulse(a1),
+               PwmServo_Angle_To_Pulse(a2));
 }
 
 // Called from TIM7 ISR at 100kHz
 void PwmServo_Handle(void)
 {
-    // At frame boundary: go HIGH and latch new pulse widths atomically
     if (pwmCount == 0)
     {
         if (pulseUpdated)
@@ -64,9 +68,9 @@ void PwmServo_Handle(void)
         SERVO2_HIGH();
     }
 
-    // Pull each servo LOW exactly when its pulse expires
-    if (pwmCount == servoPulse[0]) SERVO1_LOW();
-    if (pwmCount == servoPulse[1]) SERVO2_LOW();
+    // ── Use >= instead of == to survive any skipped tick ──────────────────
+    if (pwmCount >= servoPulse[0]) SERVO1_LOW();
+    if (pwmCount >= servoPulse[1]) SERVO2_LOW();
 
     if (++pwmCount >= SERVO_FRAME_TICKS)
         pwmCount = 0;
