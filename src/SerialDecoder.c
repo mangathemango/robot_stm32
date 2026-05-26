@@ -20,66 +20,21 @@ static int bufIndex = 0; // renamed from 'index' — index() is a POSIX stdlib n
 //   [3..3+N-1] DATA        (N = LEN bytes)
 //   [3+N]      CHECKSUM
 // ─────────────────────────────────────────────────────────────────────────────
+// SerialDecoder.c
+RingBuf uartRing = {0};
+volatile uint8_t packetReady = 0;
+uint8_t packetBuf[300];
+uint8_t packetLen = 0;
+
+// ISR just drops byte into ring — nothing else
 void handleSerialData(uint8_t byte)
 {
-    // ── Sync: always reset on a fresh start byte ──────────────────────────────
-    if (byte == START_BYTE)
+    uint16_t next = (uartRing.head + 1) % RING_BUF_SIZE;
+    if (next != uartRing.tail) // drop byte if full, never block
     {
-        bufIndex = 0;
+        uartRing.buf[uartRing.head] = byte;
+        uartRing.head = next;
     }
-
-    // ── Guard: drop bytes that arrive before we have seen a start byte ────────
-    if (bufIndex == 0 && byte != START_BYTE)
-    {
-        return;
-    }
-
-    // ── Overflow guard ────────────────────────────────────────────────────────
-    if (bufIndex >= (int)sizeof(buffer))
-    {
-        bufIndex = 0; // reset and wait for next start byte
-        return;
-    }
-
-    buffer[bufIndex++] = byte;
-
-    // ── Wait until we at least have START + ID + LEN ─────────────────────────
-    if (bufIndex < 3)
-    {
-        return;
-    }
-
-    uint8_t len = buffer[PKT_LEN];          // number of DATA bytes
-    int expectedTotal = PKT_DATA + len + 1; // header(3) + data(len) + checksum(1)
-
-    // ── Wait until the full packet (including checksum) has arrived ───────────
-    if (bufIndex < expectedTotal)
-    {
-        return;
-    }
-
-    // ── Checksum validation ───────────────────────────────────────────────────
-    // XOR every byte from START up to and including the last DATA byte.
-    // The result must match the checksum byte that follows.
-    uint8_t computed = 0;
-    for (int i = PKT_START; i < PKT_DATA + len; i++)
-    {
-        computed ^= buffer[i];
-    }
-
-    uint8_t received = buffer[PKT_DATA + len];
-
-    if (computed != received)
-    {
-        // Bad checksum — discard packet and re-sync
-        Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n");
-        bufIndex = 0;
-        return;
-    }
-
-    // ── All checks passed — hand off to packet handler ────────────────────────
-    handlePacket();
-    bufIndex = 0; // ready for next packet
 }
 
 // ── handlePacket ──────────────────────────────────────────────────────────────
@@ -146,7 +101,7 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 2000, 0, (uint32_t) position, true, false);
+        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 2000, 0, (uint32_t)position, true, false);
 
         Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n");
         break;
@@ -160,7 +115,7 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(HOR_MOTOR, MOTOR_DIR_CW, 150, 0, (uint32_t) position, true, false);
+        Pos_Control(HOR_MOTOR, MOTOR_DIR_CW, 150, 0, (uint32_t)position, true, false);
 
         Serial_Send_Log("[PKT] Set_Horizontal_Arm_Position: %u\n");
         break;
@@ -198,5 +153,77 @@ void handlePacket(void)
     default:
         Serial_Send_Log("[SerialDecoder] Unknown command ID: 0x%02X\n");
         break;
+    }
+}
+
+// New function — call this from main loop, NOT from ISR
+void SerialDecoder_Process(void)
+{
+    while (uartRing.tail != uartRing.head)
+    {
+        uint8_t byte = uartRing.buf[uartRing.tail];
+        uartRing.tail = (uartRing.tail + 1) % RING_BUF_SIZE;
+
+        // your existing handleSerialData logic goes here,
+        // but now it runs in main context — safe to call CAN, I2C, anything
+        // ── Sync: always reset on a fresh start byte ──────────────────────────────
+        if (byte == START_BYTE)
+        {
+            bufIndex = 0;
+        }
+
+        // ── Guard: drop bytes that arrive before we have seen a start byte ────────
+        if (bufIndex == 0 && byte != START_BYTE)
+        {
+            continue;
+        }
+
+        // ── Overflow guard ────────────────────────────────────────────────────────
+        if (bufIndex >= (int)sizeof(buffer))
+        {
+            bufIndex = 0; // reset and wait for next start byte
+            continue;
+            ;
+        }
+
+        buffer[bufIndex++] = byte;
+
+        // ── Wait until we at least have START + ID + LEN ─────────────────────────
+        if (bufIndex < 3)
+        {
+            continue;
+        }
+
+        uint8_t len = buffer[PKT_LEN];          // number of DATA bytes
+        int expectedTotal = PKT_DATA + len + 1; // header(3) + data(len) + checksum(1)
+
+        // ── Wait until the full packet (including checksum) has arrived ───────────
+        if (bufIndex < expectedTotal)
+        {
+            continue;
+        }
+
+        // ── Checksum validation ───────────────────────────────────────────────────
+        // XOR every byte from START up to and including the last DATA byte.
+        // The result must match the checksum byte that follows.
+        uint8_t computed = 0;
+        for (int i = PKT_START; i < PKT_DATA + len; i++)
+        {
+            computed ^= buffer[i];
+        }
+
+        uint8_t received = buffer[PKT_DATA + len];
+
+        if (computed != received)
+        {
+            // Bad checksum — discard packet and re-sync
+            Serial_Send_Log("[SerialDecoder] Checksum error: computed 0x%02X, received 0x%02X\n");
+            bufIndex = 0;
+            continue;
+        }
+
+        // ── All checks passed — hand off to packet handler ────────────────────────
+        handlePacket();
+        bufIndex = 0; // ready for next packet
     }
 }

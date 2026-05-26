@@ -125,7 +125,7 @@ int main(void)
   HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 2, 0);
 
   // DMA (UART TX complete) just below CAN
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 3, 0);
 
   // USART1 below DMA
   HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
@@ -165,6 +165,7 @@ int main(void)
   static uint8_t key3_prev = 1;
   while (1)
   {
+    SerialDecoder_Process();
     MotorVelocity_Task();
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
@@ -349,7 +350,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 }
 

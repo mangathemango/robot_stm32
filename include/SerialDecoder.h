@@ -17,6 +17,7 @@
 #define PKT_ID 1
 #define PKT_LEN 2
 #define PKT_DATA 3 // data starts at byte 3
+#define RING_BUF_SIZE 256
 
 // ── Command IDs ───────────────────────────────────────────────────────────────
 typedef enum
@@ -37,3 +38,16 @@ extern uint8_t buffer[300];
 // ── Public API ────────────────────────────────────────────────────────────────
 void handleSerialData(uint8_t byte);
 void handlePacket(void);
+
+// SerialDecoder.h additions
+typedef struct {
+    uint8_t  buf[RING_BUF_SIZE];
+    volatile uint16_t head;
+    volatile uint16_t tail;
+} RingBuf;
+
+extern RingBuf uartRing;
+extern volatile uint8_t packetReady;
+extern uint8_t packetBuf[300];
+extern uint8_t packetLen;
+
