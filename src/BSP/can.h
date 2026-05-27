@@ -49,6 +49,7 @@ extern volatile CAN_t can;
  * --------------------------------------------------------------- */
 HAL_StatusTypeDef CAN_Start(void);
 void can_SendCmd(volatile uint8_t *cmd, uint8_t len);
+void CAN_ProcessDeferredReports(void);
 
 /**
  * @brief  Request and return real-time velocity (RPM) from one motor.

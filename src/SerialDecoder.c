@@ -101,7 +101,7 @@ void handlePacket(void)
             break;
         uint16_t position = (uint16_t)(data[0] | (data[1] << 8)); // little-endian
 
-        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 2000, 0, (uint32_t)position, true, false);
+        Pos_Control(VER_MOTOR, MOTOR_DIR_CW, 500, 0, (uint32_t)position, true, false);
 
         Serial_Send_Log("[PKT] Set_Vertical_Arm_Position: %u\n");
         break;
