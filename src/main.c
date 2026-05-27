@@ -122,10 +122,10 @@ int main(void)
   MX_USART1_UART_Init();
   USART1_Init();
 
-  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 3, 0);
 
   // DMA (UART TX complete) just below CAN
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 3, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 4, 0);
 
   // USART1 below DMA
   HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
