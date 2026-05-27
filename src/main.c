@@ -133,7 +133,6 @@ int main(void)
   // TIM7 (servo PWM) lowest — jitter here is fine
   HAL_NVIC_SetPriority(TIM7_IRQn, 1, 0);
 
-
   HAL_TIM_Base_Start_IT(&htim7);
   PwmServo_Init();
   ssd1306_Init();
@@ -159,7 +158,6 @@ int main(void)
 
   uint32_t next_telemetry_ms = HAL_GetTick();
 
-
   static uint8_t key1_prev = 1;
   static uint8_t key2_prev = 1;
   static uint8_t key3_prev = 1;
@@ -167,6 +165,7 @@ int main(void)
   {
     SerialDecoder_Process();
     MotorVelocity_Task();
+    CAN_ProcessDeferredReports();
 
     if ((int32_t)(HAL_GetTick() - next_telemetry_ms) >= 0)
     {

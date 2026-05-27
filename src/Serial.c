@@ -68,14 +68,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(&huart1, (uint8_t *)&RxTemp, 1);
 }
 
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    if (huart == NULL || huart->Instance != USART1)
+    {
+        return;
+    }
+
+    __HAL_UART_CLEAR_OREFLAG(huart);
+    __HAL_UART_CLEAR_NEFLAG(huart);
+    __HAL_UART_CLEAR_FEFLAG(huart);
+    __HAL_UART_CLEAR_PEFLAG(huart);
+
+    (void)HAL_UART_AbortReceive_IT(huart);
+    HAL_UART_Receive_IT(&huart1, (uint8_t *)&RxTemp, 1);
+}
+
 /* --------------------------------------------------------------------------
  * __io_putchar / fputc  — redirect printf to USART1
  * The correct definition is selected automatically based on the toolchain.
  * -------------------------------------------------------------------------- */
 #ifdef __GNUC__
-    #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #else
-    #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
 
 PUTCHAR_PROTOTYPE

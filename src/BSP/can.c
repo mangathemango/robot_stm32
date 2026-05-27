@@ -7,6 +7,18 @@
  * --------------------------------------------------------------- */
 volatile CAN_t can = {0};
 
+typedef struct
+{
+    volatile bool wheelVelPending;
+    int16_t wheelVel[4];
+    volatile bool verticalPosPending;
+    uint16_t verticalPos;
+    volatile bool horizontalPosPending;
+    uint16_t horizontalPos;
+} DeferredReport_t;
+
+static DeferredReport_t deferredReport = {0};
+
 /* ---------------------------------------------------------------
  *  CAN_Start
  * --------------------------------------------------------------- */
@@ -81,10 +93,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
         if (can.motor[TOP_LEFT_MOTOR - 1].vel_updated && can.motor[TOP_RIGHT_MOTOR - 1].vel_updated &&
             can.motor[BACK_LEFT_MOTOR - 1].vel_updated && can.motor[BACK_RIGHT_MOTOR - 1].vel_updated)
         {
-            Serial_Send_WheelVelocities((int16_t)can.motor[TOP_LEFT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[TOP_RIGHT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[BACK_LEFT_MOTOR - 1].rpm,
-                                        (int16_t)can.motor[BACK_RIGHT_MOTOR - 1].rpm);
+            deferredReport.wheelVel[0] = (int16_t)can.motor[TOP_LEFT_MOTOR - 1].rpm;
+            deferredReport.wheelVel[1] = (int16_t)can.motor[TOP_RIGHT_MOTOR - 1].rpm;
+            deferredReport.wheelVel[2] = (int16_t)can.motor[BACK_LEFT_MOTOR - 1].rpm;
+            deferredReport.wheelVel[3] = (int16_t)can.motor[BACK_RIGHT_MOTOR - 1].rpm;
+            deferredReport.wheelVelPending = true;
             /* clear the flags so next update will be sent once all four arrive again */
             can.motor[TOP_LEFT_MOTOR - 1].vel_updated = false;
             can.motor[TOP_RIGHT_MOTOR - 1].vel_updated = false;
@@ -106,7 +119,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
             int32_t scaled = can.motor[idx].pulses;
             if (scaled < 0)
                 scaled = -scaled;
-            Serial_Send_VerticalArmPosition((uint16_t)scaled);
+            deferredReport.verticalPos = (uint16_t)scaled;
+            deferredReport.verticalPosPending = true;
             can.motor[idx].pos_updated = false; /* consumed */
         }
         else if (addr == HOR_MOTOR)
@@ -114,9 +128,34 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan_cb)
             int32_t scaled = can.motor[idx].pulses;
             if (scaled < 0)
                 scaled = -scaled;
-            Serial_Send_HorizontalArmPosition((uint16_t)scaled);
+            deferredReport.horizontalPos = (uint16_t)scaled;
+            deferredReport.horizontalPosPending = true;
             can.motor[idx].pos_updated = false; /* consumed */
         }
+    }
+}
+
+void CAN_ProcessDeferredReports(void)
+{
+    if (deferredReport.wheelVelPending)
+    {
+        deferredReport.wheelVelPending = false;
+        Serial_Send_WheelVelocities(deferredReport.wheelVel[0],
+                                    deferredReport.wheelVel[1],
+                                    deferredReport.wheelVel[2],
+                                    deferredReport.wheelVel[3]);
+    }
+
+    if (deferredReport.verticalPosPending)
+    {
+        deferredReport.verticalPosPending = false;
+        Serial_Send_VerticalArmPosition(deferredReport.verticalPos);
+    }
+
+    if (deferredReport.horizontalPosPending)
+    {
+        deferredReport.horizontalPosPending = false;
+        Serial_Send_HorizontalArmPosition(deferredReport.horizontalPos);
     }
 }
 
