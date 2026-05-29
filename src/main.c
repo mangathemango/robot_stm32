@@ -115,17 +115,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
+  // MX_DMA_Init();
   MX_TIM7_Init();
   MX_CAN_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   USART1_Init();
 
-  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 2, 0);
-
-  // DMA (UART TX complete) just below CAN
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 3, 0);
+  HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 3, 0);
 
   // USART1 below DMA
   HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
