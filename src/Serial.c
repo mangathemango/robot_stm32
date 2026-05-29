@@ -4,6 +4,23 @@
 /* Single-byte receive buffer used by the interrupt-driven receive */
 uint8_t RxTemp = 0;
 UART_HandleTypeDef huart1;
+TxRingBuf txRing = {0};
+
+/* --------------------------------------------------------------------------
+ * tx_push  — copy one byte into the TX ring buffer.
+ * Called from any context (main, RTOS task).  Never blocks.
+ * Returns 0 on success, -1 if the buffer is full (byte is dropped).
+ * -------------------------------------------------------------------------- */
+static int tx_push(uint8_t byte)
+{
+    uint16_t next = (txRing.head + 1) % TX_RING_BUF_SIZE;
+    if (next == txRing.tail)
+        return -1;          // full — drop byte (same policy as your RX ring)
+
+    txRing.buf[txRing.head] = byte;
+    txRing.head = next;
+    return 0;
+}
 
 /* --------------------------------------------------------------------------
  * USART1_Init
@@ -23,28 +40,32 @@ void USART1_Init(void)
 void USART1_Send_U8(uint8_t ch)
 {
     // The serial port sends one byte - 串口发送一个字节
-    HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+    USART1_Send_ArrayU8(&ch, 1);
 }
 
 /* --------------------------------------------------------------------------
- * USART1_Send_ArrayU8
- * Send a buffer of bytes over USART1.
- * If ENABLE_UART_DMA is 1, uses DMA so the CPU is not blocked.
- * Otherwise falls back to sending byte-by-byte.
+ * USART1_Send_ArrayU8  — non-blocking TX via ring buffer + TXE interrupt.
+ *
+ * Flow:
+ *   1. Push all bytes into txRing.
+ *   2. If the UART TXE interrupt is not already running, enable it.
+ *      The ISR will drain the ring autonomously from here on.
  * -------------------------------------------------------------------------- */
-void USART1_Send_ArrayU8(uint8_t *BufferPtr, uint16_t Length)
+void USART1_Send_ArrayU8(uint8_t *buf, uint16_t len)
 {
-    // The serial port sends a string of data - 串口发送一串数据
-#if ENABLE_UART_DMA
-    HAL_UART_Transmit_DMA(&huart1, BufferPtr, Length);
-#else
-    while (Length--)
-    {
-        USART1_Send_U8(*BufferPtr);
-        BufferPtr++;
-    }
-#endif
+    if (!buf || len == 0) return;
+
+    /* Push bytes — drop silently if ring is full (same as RX side) */
+    for (uint16_t i = 0; i < len; i++)
+        tx_push(buf[i]);
+
+    /* Kick the ISR if it is not already running.
+     * __HAL_UART_GET_IT_SOURCE checks whether TXE IRQ is already enabled,
+     * which means the ISR is still draining — no need to re-enable. */
+    if (!__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_TXE))
+        __HAL_UART_ENABLE_IT(&huart1, UART_IT_TXE);
 }
+
 
 /* --------------------------------------------------------------------------
  * HAL_UART_RxCpltCallback

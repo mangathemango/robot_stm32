@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_it.h"
+#include "Serial.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -234,13 +235,24 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
  */
 void USART1_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART1_IRQn 0 */
+  // ── TX ring-buffer drain (TXE interrupt) ──────────────────────
+  if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE) &&
+      __HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_TXE))
+  {
+    if (txRing.tail != txRing.head)
+    {
+      huart1.Instance->DR = txRing.buf[txRing.tail];
+      txRing.tail = (txRing.tail + 1) % TX_RING_BUF_SIZE;
+    }
+    else
+    {
+      // Buffer empty — stop firing TXE interrupts
+      __HAL_UART_DISABLE_IT(&huart1, UART_IT_TXE);
+    }
+  }
 
-  /* USER CODE END USART1_IRQn 0 */
+  // ── Let HAL handle RX complete, errors, etc. ──────────────────
   HAL_UART_IRQHandler(&huart1);
-  /* USER CODE BEGIN USART1_IRQn 1 */
-
-  /* USER CODE END USART1_IRQn 1 */
 }
 
 /**
